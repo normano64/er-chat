@@ -1,2 +1,2 @@
-erlangchat
+erlang-chat
 ==========
