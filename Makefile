@@ -1,19 +1,19 @@
 #################### 
-GROUP_NUMBER := xx
+GROUP_NUMBER := 11
 ####################
 
-ERLC := erlc
+ERLC := erlc #This is the standard Erlang compiler.
 ERLC_FLAGS := -W -I include
 
-ERL_FILES := $(wildcard src/*.erl)
-BEAM_FILES := $(patsubst src/%.erl,ebin/%.beam,${ERL_FILES})
+ERL_FILES := $(wildcard src/*.erl) #Creates a list of .erl files from source.
+BEAM_FILES := $(patsubst src/%.erl,ebin/%.beam,${ERL_FILES}) #Creates a list of .beam files by replacing the .erl by .beam in src.
 
 comma:= ,
 empty:=
 space:= $(empty) $(empty)
 
-EDOC_SRC := $(filter-out %_test.erl, $(ERL_FILES))
-EDOC_SRC_LIST := [$(subst $(space),$(comma),$(patsubst src/%.erl,'src/%.erl', $(EDOC_SRC)))]
+EDOC_SRC := $(filter-out %_test.erl, $(ERL_FILES)) #Filters out all test-functions from the ERL_FILES.
+EDOC_SRC_LIST := [$(subst $(space),$(comma),$(patsubst src/%.erl,'src/%.erl', $(EDOC_SRC)))] #Creates a punctuated list from EDOC_SRC.
 
 REQUIRED_DIR_NAME := pop_2012_project_group_$(GROUP_NUMBER)
 
