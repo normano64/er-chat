@@ -5,9 +5,9 @@
 -module(server).
 -compile(export_all).
 
-start_server(Port) ->
+start_server() ->
     Pid = spawn_link(fun() ->
-			     {ok, Listen} = gen_tcp:listen(Port, [binary, {active, false}]),
+			     {ok, Listen} = gen_tcp:listen(6667, [binary, {active, false}]),
 			     spawn(fun() -> acceptor(Listen) end),
 			     timer:sleep(infinity)
 		     end),
@@ -75,6 +75,7 @@ handle(Socket, User) ->
     inet:setopts(Socket, [{active, once}]),
     receive
         {tcp, Socket, Msg} ->
+            io:format(": ~p~n", [Msg]),
 	    Commands = binary:split(trim(Msg),<<13>>, [trim, global]),
 	    ReturnUser = commands(Socket, Commands, User),
             handle(Socket, ReturnUser);
