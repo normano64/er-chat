@@ -15,26 +15,26 @@ space:= $(empty) $(empty)
 EDOC_SRC := $(filter-out %_test.erl, $(ERL_FILES)) #Filters out all test-functions from the ERL_FILES.
 EDOC_SRC_LIST := [$(subst $(space),$(comma),$(patsubst src/%.erl,'src/%.erl', $(EDOC_SRC)))] #Creates a punctuated list from EDOC_SRC.
 
-REQUIRED_DIR_NAME := pop_2012_project_group_$(GROUP_NUMBER)
+REQUIRED_DIR_NAME := pop_2014_project_group_$(GROUP_NUMBER) #Creates pop_2014_project_group_11
 
-PROJECT_DIR := $(notdir $(shell pwd))
+PROJECT_DIR := $(notdir $(shell pwd)) #Creates a path to the project.
 
-USER=$(shell whoami)
-ARCHIVE_NAME :=  $(REQUIRED_DIR_NAME)_archive_$(USER)_$(shell date "+%Y-%m-%d__%H:%M:%S")__.tar.gz
-ARCHIVE_DIR := ..
+USER=$(shell whoami) #The username of the current user.
+ARCHIVE_NAME :=  $(REQUIRED_DIR_NAME)_archive_$(USER)_$(shell date "+%Y-%m-%d__%H:%M:%S")__.tar.gz #Generate an Archive name.
+ARCHIVE_DIR := .. 
 
-all: $(BEAM_FILES)
+all: $(BEAM_FILES) #Just creating the .beam files? Shouldent this be ERL_FILES
 
-ebin/%.beam: src/%.erl
+ebin/%.beam: src/%.erl #Some sort of a compilation?
 	$(ERLC) $(ERLC_FLAGS) -o ebin $<
 
-start: all
+start: all 
 	(cd ebin && erl -eval 'foo:start(), init:stop()')
 
 test: all
 	(cd ebin && erl -noinput -eval 'eunit:test({dir, "."}, [verbose]), init:stop()')
 
-doc: $(BEAM_FILES)
+doc: $(BEAM_FILES) 
 	erl -noshell -eval "edoc:files($(EDOC_SRC_LIST), [{dir, 'doc/html'}])" -s init stop
 
 clean:
