@@ -75,7 +75,8 @@ command(_, _, _, User, Hostname) ->
 handle(Socket, User) ->
     inet:setopts(Socket, [{active, once}]),
     {_,{Hostname2,_}} = inet:sockname(Socket),
-    {_,Hostname} = inet:gethostbyaddr(Hostname2),
+    {_,{_,_,_,_,_,[Hostname]}} = inet:gethostbyaddr(Hostname2),
+    io:format("~w:~w~n", [inet:ntoa(Hostname),Hostname2]),
     receive
         {tcp, Socket, Msg} ->
             io:format(": ~p~n", [Msg]),
