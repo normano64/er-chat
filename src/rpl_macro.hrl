@@ -1,5 +1,3 @@
--module(rpl_macro).
-
 % Connection replies 001-009
 -define(RPL_WELCOME, <<"001">>). % Welcome to the Internet Relay Network <nick>!<user>@<host>
 -define(RPL_YOURHOST, <<"002">>). % Your host is <servername>, running version <ver>
