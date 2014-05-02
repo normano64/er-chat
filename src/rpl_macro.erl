@@ -19,4 +19,4 @@
 -define(ERR_NOSUCHNICK, <<"401">>). % <nickname> :No such nick/channel
 -define(ERR_NOSUCHSERVER, <<"402">>). % <server name> :No such server"
 
--define(ERR_NICKNAMEINUSE, <<"433">>). %
+-define(ERR_NICKNAMEINUSE, <<"433">>). % <nick> :Nickname is already in use
