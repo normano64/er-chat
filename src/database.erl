@@ -1,7 +1,7 @@
 -module(database).
 -compile(export_all).
 -include_lib("eunit/include/eunit.hrl").
--record(user,{id,password,channels,socket,server}).
+-record(user,{socket, id, server}).
 -record(channel,{id, users}).
 
 create_db(ListNodes)->
@@ -9,8 +9,8 @@ create_db(ListNodes)->
     mnesia:start(),
     mnesia:create_table(user,[{attributes,record_info(fields,user)},{disc_copies,ListNodes},{type,set}]).
 
-insert_user(Id,Password,Channels,Socket,Server)->
-    Data = #user{id=Id, password=Password, channels = Channels, socket=Socket, server=Server},
+insert_user(Socket,Id,Server)->
+    Data = #user{socket=Socket,id=Id, server=Server},
     F = fun() ->
 		mnesia:write(Data)
 	end,
@@ -33,12 +33,33 @@ join_channel(ChannelId, User)->
 	end,
     mnesia:transaction(F).
 
-query_database(Id)->
+check_socket(Socket)->
     F = fun() ->
-		mnesia:read(user,Id)
+		mnesia:read(user,Socket)
 	end,
     mnesia:transaction(F).
 
+query_user(Id)->
+    F = fun() ->
+		User = mnesia:read(user,Id),
+		User
+	end,
+    mnesia:transaction(F).
+
+check_nick(Nick)->
+    F = fun() ->
+		mnesia:match_object({user,'_',Nick,'_'})
+	end,
+    mnesia:transaction(F).
+
+get_nick(_Socket)->
+    <<"localnick">>.
+
+delete_user(Id)->
+    F = fun()->
+		mnesia:delete({user,Id})
+	end,
+    mnesia:transaction(F).
 start()->
     mnesia:start().
 stop()->
@@ -49,12 +70,20 @@ stop()->
 %                               EUnit database test
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-get_touple([H|_T])->
+
+
+get_head([H|_T])->
     H.
 update_list_test()->
     Channel = #channel{id="ost",users = [{[o,a], "mumin"}, {[r,a],"hemulen"}]},
     TestList = update_list(Channel,{[o],"korv"}),
-    {[H|_T],Name} = get_touple(TestList),
+    {[H|_T],Name} = get_head(TestList),
     [?assertEqual(H,o),
     ?assertEqual(Name,"korv")
     ].
+
+database_test()->
+    create_db([node()]),
+    insert_user("Perkson",12321,"servername"),
+    {_,User} = query_database("Perkson"),
+    ?assertEqual(User,[{user,"Perkson","pettsson",["socker","salt"],12321,"servername"}]).
