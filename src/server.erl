@@ -30,59 +30,68 @@ is_whitespace(_) ->
 trim(Text) when is_binary(Text) ->
     << << X >> || <<X>> <= Text, not is_whitespace(X) >>.
 
-commands(_Socket, [], User, Hostname) ->
+commands(_Socket, []) ->
     User;
-commands(Socket, [CommandMsg|Tail], User, Hostname) ->
+commands(Socket, [CommandMsg|Tail]) ->
     [Command, Message] = binary:split(CommandMsg,<<32>>),
-    {{_,_,_},{Hour,Min,Sec}} = erlang:localtime(),
-    io:format("~2..0B:~2..0B:~2..0B ~p > ~s ~s~n",[Hour, Min, Sec, Socket, Command, Message]),
-    io:format("~2..0B:~2..0B:~2..0B ~p ",[Hour, Min, Sec, Socket]),
-    ReturnUser = command(Socket, Command, Message, User, Hostname),
-    commands(Socket, Tail, ReturnUser, Hostname).
+    %%{{_,_,_},{Hour,Min,Sec}} = erlang:localtime(),
+    %%io:format("~2..0B:~2..0B:~2..0B ~p > ~s ~s~n",[Hour, Min, Sec, Socket, Command, Message]),
+    %%io:format("~2..0B:~2..0B:~2..0B ~p ",[Hour, Min, Sec, Socket]),
+    command(Socket, Command, Message),
+    commands(Socket, Tail).
 
-command(Socket, <<"NICK">>, NewNick, User, Hostname) ->
-    %gen_tcp:send(Socket, [<<":">>, User, <<" NICK ">>, NewNick, <<"\r\n">>]),
-    io:format("< NICK ~s~n", [NewNick]),
-    NewNick;
-command(Socket, <<"USER">>, _Message, User, Hostname) ->
-    gen_tcp:send(Socket, [<<":localhost 001 ">>, User, <<" :Welcome to the Internet Relay Chat Network ">>, User, <<"\r\n">>]),
-    gen_tcp:send(Socket, [<<":localhost 002 ">>, User, <<" :Your host is localhost[130.238.93.82], running version er-chat-alpha-01\r\n">>]),
-    io:format("< Welcome to the Internet Relay Network ~s@~w~n", [User, Hostname]),
-    User;
-command(Socket, <<"MODE">>, _Message, User, Hostname) -> % MODE
-    gen_tcp:send(Socket, [<<":">>, User, <<" MODE ">>, User, <<" :+i\r\n">>]),
-    io:format("< MODE pebe7501 +i~n"),
-    User;
-command(Socket, <<"WHOIS">>, _Message, User, Hostname) -> % WHOIS
-    gen_tcp:send(Socket, [<<58>>, User, <<32>>, list_to_binary("WHOIS pebe7501 :Per Bergqwist\n")]),
-    io:format("< WHOIS pebe7501 :Per Bergqwist~n"),
-    User;
-command(Socket, <<"PING">>, _Message, User, Hostname) -> % PING send PONG
-    gen_tcp:send(Socket, [<<":localhost PONG localhost :localhost\r\n">>]),
-    %gen_tcp:send(Socket, [<<58>>, list_to_binary("bitflip"), <<32>>, list_to_binary("PRIVMSG"), <<32>>, User, <<32>>, <<58>>, list_to_binary("Hoppas det smakar massor med ost\r\n")]),
-    io:format("< PONG localhost localhost~n"),
-    User;
-command(Socket,<<"JOIN">>, Message, User, Hostname)-> %JOIN message = #detduskrivit
-    gen_tcp:send(Socket, [<<":">>, User, <<"!per@localhost JOIN :">>, Message, <<"\r\n">>]),
-    gen_tcp:send(Socket, [<<":localhost 331 ">>, User, <<" ">>, Message, <<" :No Topic Is Set\r\n">>]),
-    gen_tcp:send(Socket, [<<":localhost 353 ">>,User, <<" @ ">>, Message,<<" :Ostmackan @OP @enHest Yaourt\r\n">>]),
-    io:format("Who is knoking on my door???~n");
-command(_Socket, <<>>, _Message, User, Hostname) -> % QUIT
-    User;
-command(_, _, _, User, Hostname) ->
-    User.
+command(Socket, <<"NICK">>, Message) ->
+    nick(Message, <<"localhost">>, Socket);
+command(Socket, <<"User">>, Message) ->
+    user();
+command(Socket, <<"PING">>, Message) ->
+    ping(Message, <<"localhost">>, Socket).
 
-handle(Socket, User) ->
-    inet:setopts(Socket, [{active, once}]),
-    {_,{Hostname2,_}} = inet:sockname(Socket),
-    {_,{_,_,_,_,_,[Hostname]}} = inet:gethostbyaddr(Hostname2),
-    io:format("~w:~w~n", [inet:ntoa(Hostname),Hostname2]),
+
+%% command(Socket, <<"NICK">>, NewNick, User, Hostname) ->
+%%     %gen_tcp:send(Socket, [<<":">>, User, <<" NICK ">>, NewNick, <<"\r\n">>]),
+%%     io:format("< NICK ~s~n", [NewNick]),
+%%     NewNick;
+%% command(Socket, <<"USER">>, _Message, User, Hostname) ->
+%%     gen_tcp:send(Socket, [<<":localhost 001 ">>, User, <<" :Welcome to the Internet Relay Chat Network ">>, User, <<"\r\n">>]),
+%%     gen_tcp:send(Socket, [<<":localhost 002 ">>, User, <<" :Your host is localhost[130.238.93.82], running version er-chat-alpha-01\r\n">>]),
+%%     io:format("< Welcome to the Internet Relay Network ~s@~w~n", [User, Hostname]),
+%%     User;
+%% command(Socket, <<"MODE">>, _Message, User, Hostname) -> % MODE
+%%     gen_tcp:send(Socket, [<<":">>, User, <<" MODE ">>, User, <<" :+i\r\n">>]),
+%%     io:format("< MODE pebe7501 +i~n"),
+%%     User;
+%% command(Socket, <<"WHOIS">>, _Message, User, Hostname) -> % WHOIS
+%%     gen_tcp:send(Socket, [<<58>>, User, <<32>>, list_to_binary("WHOIS pebe7501 :Per Bergqwist\n")]),
+%%     io:format("< WHOIS pebe7501 :Per Bergqwist~n"),
+%%     User;
+%% command(Socket, <<"PING">>, _Message, User, Hostname) -> % PING send PONG
+%%     gen_tcp:send(Socket, [<<":localhost PONG localhost :localhost\r\n">>]),
+%%     %gen_tcp:send(Socket, [<<58>>, list_to_binary("bitflip"), <<32>>, list_to_binary("PRIVMSG"), <<32>>, User, <<32>>, <<58>>, list_to_binary("Hoppas det smakar massor med ost\r\n")]),
+%%     io:format("< PONG localhost localhost~n"),
+%%     User;
+%% command(Socket,<<"JOIN">>, Message, User, Hostname)-> %JOIN message = #detduskrivit
+%%     gen_tcp:send(Socket, [<<":">>, User, <<"!per@localhost JOIN :">>, Message, <<"\r\n">>]),
+%%     gen_tcp:send(Socket, [<<":localhost 331 ">>, User, <<" ">>, Message, <<" :No Topic Is Set\r\n">>]),
+%%     gen_tcp:send(Socket, [<<":localhost 353 ">>,User, <<" @ ">>, Message,<<" :Ostmackan @OP @enHest Yaourt\r\n">>]),
+%%     io:format("Who is knoking on my door???~n");
+%% command(_Socket, <<>>, _Message, User, Hostname) -> % QUIT
+%%     User;
+%% command(_, _, _, User, Hostname) ->
+%%     User.
+
+handle(Socket) ->
+    %%inet:setopts(Socket, [{active, once}]),
+    %%{_,{Hostname2,_}} = inet:sockname(Socket),
+    %%{_,{_,_,_,_,_,[Hostname]}} = inet:gethostbyaddr(Hostname2),
+    %%io:format("~w:~w~n", [inet:ntoa(Hostname),Hostname2]),
     receive
         {tcp, Socket, Msg} ->
             io:format(": ~p~n", [Msg]),
 	    Commands = binary:split(trim(Msg),<<13>>, [trim, global]),
-	    ReturnUser = commands(Socket, Commands, User, Hostname),
-            handle(Socket, ReturnUser);
+	    %%ReturnUser =
+            commands(Socket, Commands),
+            handle(Socket);
 	{tcp_closed, Socket}->
 	    {{_,_,_},{Hour,Min,Sec}} = erlang:localtime(),
             io:format("~2..0B:~2..0B:~2..0B ~p disconnected~n", [Hour, Min, Sec, Socket]),
