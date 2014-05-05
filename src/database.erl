@@ -78,6 +78,13 @@ update_nick(Socket, Nick)->
 	end,
     mnesia:transaction(F).
 
+update_user(Socket, User, Realname)->
+    F = fun()->
+		[P] = mnesia:wread({user,Socket}),
+		mnesia:write(P#user{user=User,realname=Realname})
+	end,
+    mnesia:transaction(F).
+
 delete_socket(Socket)->
     F = fun()->
 		mnesia:delete({user,Socket})
