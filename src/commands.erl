@@ -3,11 +3,16 @@
 -include("rpl_macro.hrl").
 
 user(Server, Socket)->
-    Nick = database:get_nick(Socket),
+    {_,Nick} = database:get_nick(Socket),
     if
-         Nick =/= [] ->
-            gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?RPL_WELCOME, Nick, <<" :Welcome to the Internet Relay Chat Network ">>, Nick, <<"\r\n">>]);
+        Nick =/= [] ->
+            io:format("true~n"),
+            Hostname = inet:gethostname(),
+            Port = inet:port(Socket),
+            gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?RPL_WELCOME, <<" ">>, Nick, <<" :Welcome to the Internet Relay Network ">>, Nick, <<"\r\n">>]),
+            gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?RPL_YOURHOST, <<" ">>, Nick, <<" :Your host is localhost[">>, Hostname, <<"/">>, Port, <<"], running version er-chat-alpha-01\r\n">>]);
         true ->
+            io:format("fail~n"),
             []
     end.
 
@@ -17,17 +22,23 @@ nick(Nick, Server, Socket)->
             case database:check_socket(Socket) of
                 {_,[]} ->
                     database:insert_user(Socket, Nick, Server),
-                    gen_tcp:send(Socket, [<<":">>, Server, <<" NICK ">>, Nick, <<"\r\n">>]);
+                    gen_tcp:send(Socket, [<<":">>, Nick, <<"!ost@localhost NICK :">>, Nick, <<"\r\n">>]);
                 _ ->
                     database:update_nick(Socket, Nick),
-                    gen_tcp:send(Socket, [<<":">>, Server, <<" NICK ">>, Nick, <<"\r\n">>])
+                    gen_tcp:send(Socket, [<<":">>, Nick, <<"!ost@localhost NICK :">>, Nick, <<"\r\n">>])
             end;
         _  ->
-            gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?ERR_NICKNAMEINUSE, <<" ">>, Nick, <<" :Nickname is already in use.\r\n">>])
+            case database:check_socket(Socket) of
+                {_,[]} ->
+                    database:insert_user(Socket, <<"">>, Server);
+                _ ->
+                    []
+            end,
+            gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?ERR_NICKNAMEINUSE, <<" * ">>, Nick, <<" :Nickname is already in use.\r\n">>])
     end.
             
 ping(_Pinger, Server, Socket)->
-    tcp_gen:send(Socket, [<<":">>, Server, <<" PONG ">>, Server, <<" :">>, Server, <<"\r\n">>]).
+    gen_tcp:send(Socket, [<<":">>, Server, <<" PONG ">>, Server, <<" :">>, Server, <<"\r\n">>]).
 
 %% mode(, Socket)->
 %%     .

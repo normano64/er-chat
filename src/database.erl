@@ -3,12 +3,41 @@
 -include_lib("eunit/include/eunit.hrl").
 -record(user,{socket, nick, server}).
 -record(channel,{id, users}).
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                                           %
+%                               Database functions                                          %
+%                                                                                           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 create_db(ListNodes)->
     mnesia:create_schema(ListNodes),
     mnesia:start(),
     mnesia:create_table(user,[{attributes,record_info(fields,user)},{disc_copies,ListNodes},{type,set}]).
 
+traverse_table_and_show(Table_name)->
+    Iterator =  fun(Rec,_)->
+                    io:format("~p~n",[Rec]),
+                    []
+                end,
+    case mnesia:is_transaction() of
+        true -> mnesia:foldl(Iterator,[],Table_name);
+        false -> 
+            Exec = fun({Fun,Tab}) -> mnesia:foldl(Fun, [],Tab) end,
+            mnesia:activity(transaction,Exec,[{Iterator,Table_name}],mnesia_frag)
+    end.
+
+delete_table_db(Table)->
+    mnesia:delete_table(Table).
+
+start()->
+    mnesia:start().
+stop()-> 
+    mnesia:stop().
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                                           %
+%                               Socket/nick functions                                       %
+%                                                                                           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 insert_user(Socket,Nick,Server)->
     Data = #user{socket=Socket,nick=Nick, server=Server},
     F = fun() ->
@@ -25,13 +54,16 @@ check_socket(Socket)->
 
 check_nick(Nick)->
     F = fun() ->
-		mnesia:match_object({user,'_',Nick,'_'})
+		Found = mnesia:match_object({user,'_',Nick,'_'}),
+		Found
 	end,
     mnesia:transaction(F).
+
 find_nick([])->
     [];
 find_nick({_,_,Nick,_})->
     Nick.
+
 get_nick(Socket)->
     F = fun()->
 		{_,List} = check_socket(Socket),
@@ -51,15 +83,12 @@ delete_socket(Socket)->
 		mnesia:delete({user,Socket})
 	end,
     mnesia:transaction(F).
-start()->
-    mnesia:start().
-stop()->
-    mnesia:stop().
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                                           %
+%                               Channel Functions                                           %
+%                                                                                           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 insert_channel(ChannelName, User) ->
     Data = #channel{id = ChannelName,users = [User]},
     F = fun()->
@@ -78,15 +107,16 @@ join_channel(ChannelId, User)->
     mnesia:transaction(F).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-%                               EUnit database test
-%
+%                                                                                           %
+%                               EUnit database test                                         %
+%                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 get_head([])->
     [];
 get_head([H|_T])->
     H.
+
 %%update_list_test()->
   %%  Channel = #channel{id="ost",users = [{[o,a], "mumin"}, {[r,a],"hemulen"}]},
   %%  TestList = update_list(Channel,{[o],"korv"}),
