@@ -41,7 +41,8 @@ commands(Socket, [CommandMsg|Tail]) ->
     commands(Socket, Tail).
 
 command(Socket, <<"NICK">>, Message) ->
-    commands:nick(Message, <<"localhost">>, Socket);
+    ParentPid = self(),
+    spawn_link(fun()-> commands:nick(Message, ParentPid, <<"localhost">>, Socket) end);
 command(Socket, <<"USER">>, _Message) ->
     commands:user(<<"localhost">>, Socket);
 command(Socket, <<"PING">>, Message) ->
@@ -83,12 +84,9 @@ command(_Socket, _, _Message) ->
 
 handle(Socket) ->
     inet:setopts(Socket, [{active, once}]),
-    %{_,{Hostname2,_}} = inet:sockname(Socket),
-    %{_,{_,_,_,_,_,[Hostname]}} = inet:gethostbyaddr(Hostname2),
-    %io:format("~w:~w~n", [inet:ntoa(Hostname),Hostname2]),
     receive
         {tcp, Socket, Msg} ->
-            io:format(": ~p~n", [Msg]),
+            io:format("~p: ~p~n", [Socket, Msg]),
 	    Commands = binary:split(trim(Msg),<<13>>, [trim, global]),
 	    %%ReturnUser =
             commands(Socket, Commands),
