@@ -18,3 +18,5 @@
 -define(ERR_NOSUCHSERVER, <<"402">>). % <server name> :No such server"
 
 -define(ERR_NICKNAMEINUSE, <<"433">>). % <nick> :Nickname is already in use
+
+-define(ERR_ALREADYREGISTRED, <<"462">>). % <nick> :Nickname is already in use
