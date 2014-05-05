@@ -18,7 +18,7 @@ acceptor(ListenSocket) ->
     spawn(fun() -> acceptor(ListenSocket) end),
     {{_,_,_},{Hour,Min,Sec}} = erlang:localtime(),
     io:format("~2..0B:~2..0B:~2..0B ~p connected~n", [Hour, Min, Sec, Socket]),
-    handle(Socket, <<0>>).
+    handle(Socket).
 
 is_whitespace($\n)->
     true;
@@ -31,7 +31,7 @@ trim(Text) when is_binary(Text) ->
     << << X >> || <<X>> <= Text, not is_whitespace(X) >>.
 
 commands(_Socket, []) ->
-    User;
+    [];
 commands(Socket, [CommandMsg|Tail]) ->
     [Command, Message] = binary:split(CommandMsg,<<32>>),
     %%{{_,_,_},{Hour,Min,Sec}} = erlang:localtime(),
@@ -41,12 +41,13 @@ commands(Socket, [CommandMsg|Tail]) ->
     commands(Socket, Tail).
 
 command(Socket, <<"NICK">>, Message) ->
-    nick(Message, <<"localhost">>, Socket);
-command(Socket, <<"User">>, Message) ->
-    user();
+    commands:nick(Message, <<"localhost">>, Socket);
+command(Socket, <<"USER">>, _Message) ->
+    commands:user(<<"localhost">>, Socket);
 command(Socket, <<"PING">>, Message) ->
-    ping(Message, <<"localhost">>, Socket).
-
+    commands:ping(Message, <<"localhost">>, Socket);
+command(_Socket, _, _Message) ->
+    [].
 
 %% command(Socket, <<"NICK">>, NewNick, User, Hostname) ->
 %%     %gen_tcp:send(Socket, [<<":">>, User, <<" NICK ">>, NewNick, <<"\r\n">>]),
@@ -81,10 +82,10 @@ command(Socket, <<"PING">>, Message) ->
 %%     User.
 
 handle(Socket) ->
-    %%inet:setopts(Socket, [{active, once}]),
-    %%{_,{Hostname2,_}} = inet:sockname(Socket),
-    %%{_,{_,_,_,_,_,[Hostname]}} = inet:gethostbyaddr(Hostname2),
-    %%io:format("~w:~w~n", [inet:ntoa(Hostname),Hostname2]),
+    inet:setopts(Socket, [{active, once}]),
+    %{_,{Hostname2,_}} = inet:sockname(Socket),
+    %{_,{_,_,_,_,_,[Hostname]}} = inet:gethostbyaddr(Hostname2),
+    %io:format("~w:~w~n", [inet:ntoa(Hostname),Hostname2]),
     receive
         {tcp, Socket, Msg} ->
             io:format(": ~p~n", [Msg]),
@@ -95,6 +96,7 @@ handle(Socket) ->
 	{tcp_closed, Socket}->
 	    {{_,_,_},{Hour,Min,Sec}} = erlang:localtime(),
             io:format("~2..0B:~2..0B:~2..0B ~p disconnected~n", [Hour, Min, Sec, Socket]),
+            database:delete_socket(Socket),
             gen_tcp:close(Socket);
 	{tcp_error, Socket, Reason} ->
             io:format("Error on Client ~p reason: ~p~n", [Socket, Reason])
