@@ -1,7 +1,7 @@
 -module(database).
 -compile(export_all).
 -include_lib("eunit/include/eunit.hrl").
--record(user,{socket, nick, server}).
+-record(user,{socket, user, nick, server,hostent, realname}).
 -record(channel,{id, users}).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
@@ -38,8 +38,8 @@ stop()->
 %                               Socket/nick functions                                       %
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-insert_user(Socket,Nick,Server)->
-    Data = #user{socket=Socket,nick=Nick, server=Server},
+insert_user(Socket,User,Nick,Server,Hostent,Realname)->
+    Data = #user{socket=Socket,user=User,nick=Nick, server=Server,hostent=Hostent, realname=Realname},
     F = fun() ->
 		mnesia:write(Data)
 	end,
@@ -54,14 +54,14 @@ check_socket(Socket)->
 
 check_nick(Nick)->
     F = fun() ->
-		Found = mnesia:match_object({user,'_',Nick,'_'}),
+		Found = mnesia:match_object({user,'_','_',Nick,'_','_','_'}),
 		Found
 	end,
     mnesia:transaction(F).
 
 find_nick([])->
     [];
-find_nick({_,_,Nick,_})->
+find_nick({_,_,_,Nick,_,_,_})->
     Nick.
 
 get_nick(Socket)->
