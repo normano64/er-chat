@@ -41,10 +41,10 @@ commands(Socket, [CommandMsg|Tail]) ->
     commands(Socket, Tail).
 
 command(Socket, <<"NICK">>, Message) ->
-    ParentPid = self(),
-    spawn_link(fun()-> commands:nick(Message, ParentPid, <<"localhost">>, Socket) end);
+    spawn_link(fun()-> commands:nick(Message, <<"localhost">>, Socket) end);
 command(Socket, <<"USER">>, _Message) ->
-    commands:user(<<"localhost">>, Socket);
+    UserPid = spawn_link(fun()-> commands:user(<<"Per">>,<<"Per Bergqwist">>,<<"localhost">>, Socket) end),
+    register(userwork, UserPid);
 command(Socket, <<"PING">>, Message) ->
     commands:ping(Message, <<"localhost">>, Socket);
 command(_Socket, _, _Message) ->

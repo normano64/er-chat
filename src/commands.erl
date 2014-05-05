@@ -3,6 +3,7 @@
 -include("rpl_macro.hrl").
 
 user(User, RealName, Server, Socket)->
+    io:format("Pid: ~p", [self()]),
     case database:check_socket(Socket) of
         {_,UserTuple} when is_list(UserTuple) orelse element(2,UserTuple) == empty ->
             receive
@@ -24,18 +25,20 @@ user(User, RealName, Server, Socket)->
             gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?ERR_ALREADYREGISTRED, <<" ">>, Nick, <<" :You may not reregister\r\n">>])
     end.
 
-nick(Nick, ParentPid, Server, Socket)->
+nick(Nick, Server, Socket)->
     case database:check_nick(Nick) of
         {_,[]} ->
             case database:check_socket(Socket) of
                 {_,[]} ->
                     {_,{IP,_}} = inet:sockname(Socket),
                     {_,{_,Hostent,_,_,_,_}} = inet_res:gethostbyaddr(IP),
-                    database:insert_user(Socket, empty, Nick, Server, Hostent, empty),
-                    ParentPid ! {nick_ok};
-                {_,{_, User, _, _, Hostent, _}} ->
+                    database:insert_user(Socket, empty, Nick, Server, list_to_binary(Hostent), empty),
+                    UserPid = whereis(userwork),
+                    UserPid ! {nick_ok};
+                {_,[{user,_, User, OldNick, _, Hostent, _}]} ->
                     database:update_nick(Socket, Nick),
-                    gen_tcp:send(Socket, [<<":">>, Nick, <<"!">>, User, <<"@">>, Hostent, <<" NICK :">>, Nick, <<"\r\n">>])
+                    
+                    gen_tcp:send(Socket, [<<":">>, OldNick, <<"!">>, User, <<"@">>, Hostent, <<" NICK :">>, Nick, <<"\r\n">>])
             end;
         _  ->
             gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?ERR_NICKNAMEINUSE, <<" * ">>, Nick, <<" :Nickname is already in use.\r\n">>])
