@@ -18,7 +18,7 @@ acceptor(ListenSocket) ->
     {ok,List} = inet:getif(),
     {ServerIP,_,_} = lists:nth(1, List),
     {ok,{hostent,ServerHostent,_,_,_,_}} = inet:gethostbyaddr(ServerIP),
-    Host = {list_to_binary(ServerIP),list_to_binary(ServerHostent)},
+    Host = {list_to_binary(inet:ntoa(ServerIP)),list_to_binary(ServerHostent)},
     
     UserPid = spawn_link(fun()-> commands:loop_user(Host,Socket) end),
     OtherPid = spawn_link(fun()-> commands:loop_other(Host,Socket, UserPid) end),
@@ -32,7 +32,7 @@ do_recv(Socket, Timeout, ParserPid, Host) ->
             io:format("~p: ~p~n", [Socket, Message]),
 	    CommandList = binary:split(Message,<<"\n">>, [trim,global]),
 	    send_messages(ParserPid, CommandList),
-	    do_recv(Socket, 0, ParserPid);
+	    do_recv(Socket, 0, ParserPid, Host);
         {error, timeout} ->
             case Timeout of
                 1 ->
@@ -40,7 +40,7 @@ do_recv(Socket, Timeout, ParserPid, Host) ->
 		    commands:quit(<<"">>, Host, Socket);
                 _ ->
                     commands:ping(Host, Socket),
-                    do_recv(Socket, 1, ParserPid)
+                    do_recv(Socket, 1, ParserPid, Host)
             end;
         {error, Reason} ->
             io:format("~p closed, reason: ~p~n", [Socket, Reason]),

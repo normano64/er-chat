@@ -6,7 +6,7 @@ loop_user(Host,Socket)->
     receive
 	{user,[User,_Steps,_Star,RealName]} ->
 	    user(User,RealName,Host,Socket),
-	    loop_user({ServerIP,ServerHostent},Socket);
+	    loop_user(Host,Socket);
         Error ->
             io:format("Error user:~p~n",[Error])
     end.
@@ -15,7 +15,7 @@ loop_other(Host,Socket, UserPid)->
     receive 
 	{nick,[Nick]} ->
 	    nick(Nick, UserPid, Host, Socket),
-	    loop_other(Socket, UserPid);
+	    loop_other(Host, Socket, UserPid);
         {ping,[Server]} ->
 	    pong(Server, Socket),
             loop_other(Host,Socket, UserPid);
@@ -31,7 +31,6 @@ user(User, RealName, {ServerIP,ServerHostent}, Socket)->
                     {_,Nick} = database:get_nick(Socket),
                     if
                         Nick =/= [] ->
-                            {_,Hostname} = inet:gethostname(),
                             {_,Port} = inet:port(Socket),
                             database:update_user(Socket, User, RealName),
                             gen_tcp:send(Socket, ?REPLY_WELCOME), 
