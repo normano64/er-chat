@@ -1,5 +1,5 @@
 -module(parser).
-%%-include_lib("eunit/include/eunit.hlr").
+-include_lib("eunit/include/eunit.hrl").
 %%-compile(export_all).
 -export([parse/1, loop/2]).
 -define(SLASHR,13).
@@ -11,12 +11,16 @@
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-loop(UserPid,_OtherPid)->
+loop(UserPid,OtherPid)->
     receive {ok,Message}-> 
 	    case parse(Message) of
 		{<<"NICK">>,List}-> 
-		    UserPid ! {nick,List},
-		    loop(UserPid,_OtherPid) end
+		    OtherPid ! {nick,List},
+		    loop(UserPid,OtherPid);
+		{<<"USER">>,Message} ->
+		    UserPid ! {user, Message},
+		    loop(UserPid,OtherPid)
+		end
     end.
 
 parse(Bitstring) ->
@@ -38,7 +42,7 @@ parser_test() ->
     Bin2 = <<72,69,?SPACE,76,76,79>>,
     Bin3 = <<72,?SPACE,69,?SPACE,76,?SPACE,76,?SPACE,79>>,
     Bin4 = <<?SLASHR,72,69,?SLASHR,?SPACE,76,76,?SLASHR,79,?SPACE>>,
-    ?assertEqual(parser(Bin1),{<<"HELLO">>,[]}),
-    ?assertEqual(parser(Bin2),{<<"HE">>,[<<"LLO">>]}),
-    ?assertEqual(parser(Bin3),{<<"H">>,[<<"E">>,<<"L">>,<<"L">>,<<"O">>]}),
-    ?assertEqual(parser(Bin4),{<<"HE">>,[<<"LL">>,<<"O">>,<<>>]}).
+    ?assertEqual(parse(Bin1),{<<"HELLO">>,[]}),
+    ?assertEqual(parse(Bin2),{<<"HE">>,[<<"LLO">>]}),
+    ?assertEqual(parse(Bin3),{<<"H">>,[<<"E">>,<<"L">>,<<"L">>,<<"O">>]}),
+    ?assertEqual(parse(Bin4),{<<"HE">>,[<<"LL">>,<<"O">>,<<>>]}).
