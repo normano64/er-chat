@@ -4,6 +4,7 @@
 -export([parse/1, loop/2]).
 -define(SLASHR,13).
 -define(SPACE,32).
+-define(COLON,58).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
@@ -23,10 +24,13 @@ loop(UserPid,OtherPid)->
 		end
     end.
 
+
 parse(Bitstring) ->
     Bitstring_nor = << <<Bitstring_nor>> || <<Bitstring_nor>> <= Bitstring, Bitstring_nor =/= ?SLASHR>>,
-    Bitlist = binary:split(Bitstring_nor, <<?SPACE>>, [global]),
-    [Command|Parameters] = Bitlist,
+    [Bitstring_noColon|Colonpart] = binary:split(Bitstring_nor, <<?SPACE,?COLON>>, [global]),
+    Bitlist = binary:split(Bitstring_noColon, <<?SPACE>>, [global]),
+    Bitlist_complete = Bitlist ++ Colonpart,
+    [Command|Parameters] = Bitlist_complete,
     {Command,Parameters}.
 
 %%Notice that the current implementation cannot handle multiple spaces following eachother and will generate empty parameters.
