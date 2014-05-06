@@ -18,8 +18,8 @@ loop(UserPid,OtherPid)->
 		{<<"NICK">>,List}-> 
 		    OtherPid ! {nick,List},
 		    loop(UserPid,OtherPid);
-		{<<"USER">>,Message} ->
-		    UserPid ! {user, Message},
+		{<<"USER">>,List} ->
+		    UserPid ! {user,List},
 		    loop(UserPid,OtherPid)
 		end
     end.
