@@ -16,7 +16,9 @@ loop_other(Socket, UserPid)->
 	{nick,[Nick]} ->
 	    nick(Nick, UserPid, <<"localhost">>, Socket),
 	    loop_user(Socket);
-        _ ->
+        {ping,[Server]} ->
+	    pong(Server, Socket);
+	_ ->
             io:format("die nick~n")
 	end.
 
@@ -61,6 +63,10 @@ nick(Nick, UserPid, Server, Socket)->
             
 ping(Server, Socket)->
     gen_tcp:send(Socket, ?REPLY_PING).
+
+pong(Server, Socket)->
+    gen_tcp:send(Socket, ?REPLY_PONG).  
+
 
 quit(_Message, _Server, Socket)->
     case database:check_socket(Socket) of
