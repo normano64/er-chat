@@ -33,7 +33,10 @@ parse(Bitstring) ->
     [Command|Parameters] = Bitlist_complete,
     {Command,Parameters}.
 
-%%Notice that the current implementation cannot handle multiple spaces following eachother and will generate empty parameters.
+%%WEAKNESSES OF PARSE
+%%It cannot handle multiple spaces following eachother and will then generate empty parameters <<>>.
+%%If a colon isn't preceded by a space it will not be placed in Colonpart.
+%%Everything after " :" will be placed in the Colonpart and will not acted upon anymore, even another " :".
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
@@ -43,10 +46,12 @@ parse(Bitstring) ->
 
 parser_test() ->
     Bin1 = <<72,?SLASHR,69,?SLASHR,76,?SLASHR,76,?SLASHR,79>>,
-    Bin2 = <<72,69,?SPACE,76,76,79>>,
-    Bin3 = <<72,?SPACE,69,?SPACE,76,?SPACE,76,?SPACE,79>>,
-    Bin4 = <<?SLASHR,72,69,?SLASHR,?SPACE,76,76,?SLASHR,79,?SPACE>>,
+    Bin2 = <<72,?SPACE,69,?SPACE,76,?SPACE,76,?SPACE,79>>,
+    Bin3 = <<?SLASHR,72,69,?SLASHR,?SPACE,76,76,?SLASHR,79,?SPACE>>,
+    Bin4 = <<"USER guest 0 * :Ronald Mcdonald">>,
+    Bin5 = <<"USER guest 0 *:Ronald Mcdonald">>,
     ?assertEqual(parse(Bin1),{<<"HELLO">>,[]}),
-    ?assertEqual(parse(Bin2),{<<"HE">>,[<<"LLO">>]}),
-    ?assertEqual(parse(Bin3),{<<"H">>,[<<"E">>,<<"L">>,<<"L">>,<<"O">>]}),
-    ?assertEqual(parse(Bin4),{<<"HE">>,[<<"LL">>,<<"O">>,<<>>]}).
+    ?assertEqual(parse(Bin2),{<<"H">>,[<<"E">>,<<"L">>,<<"L">>,<<"O">>]}),
+    ?assertEqual(parse(Bin3),{<<"HE">>,[<<"LL">>,<<"O">>,<<>>]}),
+    ?assertEqual(parse(Bin4),{<<"USER">>,[<<"guest">>,<<"0">>,<<"*">>,<<":Ronald Mcdonald">>]}),
+    ?assertEqual(parse(Bin5),{<<"USER">>,[<<"guest">>,<<"0">>,<<"*:Ronald">>,<<"Mcdonald">>]}).
