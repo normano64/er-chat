@@ -13,15 +13,15 @@ user(User, RealName, Server, Socket)->
                             {_,Hostname} = inet:gethostname(),
                             {_,Port} = inet:port(Socket),
                             database:update_user(Socket, User, RealName),
-                            gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?RPL_WELCOME, <<" ">>, Nick, <<" :Welcome to the Internet Relay Network ">>, Nick, <<"\r\n">>]),
-                            gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?RPL_YOURHOST, <<" ">>, Nick, <<" :Your host is localhost[">>, list_to_binary(Hostname), <<"/">>, list_to_binary(integer_to_list(Port)), <<"], running version er-chat-alpha-01\r\n">>]);
+                            gen_tcp:send(Socket, ?REPLY_WELCOME), 
+                            gen_tcp:send(Socket, ?REPLY_YOURHOST);
                         true ->
                             nick_not_registered
                     end
             end;
         _ ->
             {_,Nick} = database:get_nick(Socket),
-            gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?ERR_ALREADYREGISTRED, <<" ">>, Nick, <<" :You may not reregister\r\n">>])
+            gen_tcp:send(Socket, ?REPLY_ALREADYREGISTERD)  
     end.
 
 nick(Nick, Server, Socket)->

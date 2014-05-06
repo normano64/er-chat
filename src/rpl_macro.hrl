@@ -20,3 +20,15 @@
 -define(ERR_NICKNAMEINUSE, <<"433">>). % <nick> :Nickname is already in use
 
 -define(ERR_ALREADYREGISTRED, <<"462">>). % <nick> :Nickname is already in use
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                                       %
+%                                                                                       %
+%                                        REPLIES                                        %
+%                                                                                       %
+%                                                                                       %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-define(REPLY_WELCOME,[<<":">>, Server, <<" ">>, ?RPL_WELCOME, <<" ">>, Nick, <<" :Welcome to the Internet Relay Network ">>, Nick, <<"\r\n">>]).
+-define(REPLY_YOURHOST,[<<":">>, Server, <<" ">>, ?RPL_YOURHOST, <<" ">>, Nick, <<" :Your host is localhost[">>, list_to_binary(Hostname), <<"/">>, list_to_binary(integer_to_list(Port)), <<"], running version er-chat-alpha-01\r\n">>]).
+-define(REPLY_ALREADYREGISTERD,[<<":">>, Server, <<" ">>, ?ERR_ALREADYREGISTRED, <<" ">>, Nick, <<" :You may not reregister\r\n">>]).
