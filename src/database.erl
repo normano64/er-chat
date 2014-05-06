@@ -11,7 +11,8 @@
 create_db(ListNodes)->
     mnesia:create_schema(ListNodes),
     mnesia:start(),
-    mnesia:create_table(user,[{attributes,record_info(fields,user)},{disc_copies,ListNodes},{type,set}]).
+    mnesia:create_table(user,[{attributes,record_info(fields,user)},{type,set}]).
+    %%mnesia:create_table(user,[{attributes,record_info(fields,user)},{disc_copies,ListNodes},{type,set}]).
 
 traverse_table_and_show(Table_name)->
     Iterator =  fun(Rec,_)->

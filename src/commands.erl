@@ -2,6 +2,27 @@
 -compile(export_all).
 -include("rpl_macro.hrl").
 
+get_nth([],_)->
+    [];
+get_nth([H|_T],1) ->
+    H;
+get_nth([_H|T],I) ->
+    get_nth(T,I-1).
+
+loop_user(Socket)->
+    receive 
+	{nick,Nick} ->
+	    nick(Nick, <<"localhost">>, Socket),
+	    loop_user(Socket);
+	{user, MessageList} ->
+	    {User,RealName} = {get_nth(MessageList,1),get_nth(MessageList,2)},
+	    user(User,RealName,<<"localhost">>,Socket),
+	    loop_user(Socket)
+	end.
+
+loop_other()->
+    tbi.
+
 user(User, RealName, Server, Socket)->
     case database:check_socket(Socket) of
         {_,UserTuple} when is_list(UserTuple) orelse element(2,UserTuple) == empty ->
@@ -36,15 +57,24 @@ nick(Nick, Server, Socket)->
                     UserPid ! {nick_ok};
                 {_,[{user,_, User, OldNick, _, Hostent, _}]} ->
                     database:update_nick(Socket, Nick),
-                    
-                    gen_tcp:send(Socket, [<<":">>, OldNick, <<"!">>, User, <<"@">>, Hostent, <<" NICK :">>, Nick, <<"\r\n">>])
+		    gen_tcp:send(Socket, ?REPLY_UPDATENICK) 
             end;
         _  ->
-            gen_tcp:send(Socket, [<<":">>, Server, <<" ">>, ?ERR_NICKNAMEINUSE, <<" * ">>, Nick, <<" :Nickname is already in use.\r\n">>])
+            gen_tcp:send(Socket, ?REPLY_NICKNAMEINUSE)
     end.
             
 ping(Server, Socket)->
-    gen_tcp:send(Socket, [<<"PING :">>, Server, <<"\r\n">>]).
+    gen_tcp:send(Socket, ?REPLY_PING).
+
+quit(_Message, _Server, Socket)->
+    case database:check_socket(Socket) of
+        {_,[{user,_, User, Nick, _, Hostent, _}]} ->
+            gen_tcp:send(Socket, ?REPLY_QUIT), 
+            database:delete_socket(Socket);
+        {_,[]} ->
+            already_closed
+    end.
+
 
 %% mode(, Socket)->
 %%     .
@@ -54,12 +84,3 @@ ping(Server, Socket)->
 
 %% privmsg(, Socket)->
 %%     .
-
-quit(Message, Server, Socket)->
-    case database:check_socket(Socket) of
-        {_,[{user,_, User, Nick, _, Hostent, _}]} ->
-            gen_tcp:send(Socket, [<<":">>, Nick, <<"!">>, User, <<"@">>, Hostent, <<" QUIT :">>, "Gone to buy cheese.", <<"\r\n">>]),
-            database:delete_socket(Socket);
-        {_,[]} ->
-            already_closed
-    end.
