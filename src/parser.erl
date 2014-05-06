@@ -1,3 +1,5 @@
+%% @author Sam, Mattias, Ludwing, Per och Tomas
+%% @doc Parser
 -module(parser).
 -include_lib("eunit/include/eunit.hrl").
 %%-compile(export_all).
@@ -24,6 +26,19 @@ loop(UserPid,OtherPid)->
 		end
     end.
 
+%% @doc The parse function takes a binary string and formates it to a tuple {Command/binary, [Parameters/binary]}.
+%%
+%%== Example ==
+%% parse(<<"USER GUEST 0 * :Ronald Mcdonald">>)
+%% {<<"USER">>,[<<"guest">>,<<"0">>,<<"*">>,<<":Ronald Mcdonald">>]}
+%%
+%%WEAKNESSES OF PARSE
+%%It cannot handle multiple spaces following eachother and will then generate empty parameters <<>>.
+%%If a colon isn't preceded by a space it will not be placed in Colonpart.
+%%Everything after " :" will be placed in the Colonpart and will not acted upon anymore, even another " :".
+
+
+
 
 parse(Bitstring) ->
     Bitstring_nor = << <<Bitstring_nor>> || <<Bitstring_nor>> <= Bitstring, Bitstring_nor =/= ?SLASHR>>,
@@ -33,10 +48,6 @@ parse(Bitstring) ->
     [Command|Parameters] = Bitlist_complete,
     {Command,Parameters}.
 
-%%WEAKNESSES OF PARSE
-%%It cannot handle multiple spaces following eachother and will then generate empty parameters <<>>.
-%%If a colon isn't preceded by a space it will not be placed in Colonpart.
-%%Everything after " :" will be placed in the Colonpart and will not acted upon anymore, even another " :".
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
