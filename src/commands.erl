@@ -3,24 +3,31 @@
 -include("rpl_macro.hrl").
 
 loop_user(Socket)->
-    receive 
+    receive
 	{user,[User,_Steps,_Star,RealName]} ->
 	    user(User,RealName,<<"localhost">>,Socket),
 	    loop_user(Socket);
-        _ ->
-            io:format("die user~n")
-	end.
+        Error ->
+            io:format("Error user:~p~n",[Error])
+    end.
 
 loop_other(Socket, UserPid)->
     receive 
 	{nick,[Nick]} ->
 	    nick(Nick, UserPid, <<"localhost">>, Socket),
+<<<<<<< HEAD
 	    loop_user(Socket);
         {ping,[Server]} ->
 	    pong(Server, Socket);
 	_ ->
             io:format("die nick~n")
 	end.
+=======
+	    loop_other(Socket, UserPid);
+        Error ->
+            io:format("Error nick:~p~n",[Error])
+    end.
+>>>>>>> error checking on loop_user and loop_other
 
 user(User, RealName, Server, Socket)->
     case database:check_socket(Socket) of
