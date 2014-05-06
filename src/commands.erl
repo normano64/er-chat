@@ -4,16 +4,20 @@
 
 loop_user(Socket)->
     receive 
-	{user, [User,_Steps,_Star,RealName]} ->
+	{user,[User,_Steps,_Star,RealName]} ->
 	    user(User,RealName,<<"localhost">>,Socket),
-	    loop_user(Socket)
+	    loop_user(Socket);
+        _ ->
+            io:format("die user~n")
 	end.
 
 loop_other(Socket, UserPid)->
     receive 
-	{nick,Nick} ->
-	    nick(Nick, <<"localhost">>, Socket,UserPid),
-	    loop_user(Socket)
+	{nick,[Nick]} ->
+	    nick(Nick, UserPid, <<"localhost">>, Socket),
+	    loop_user(Socket);
+        _ ->
+            io:format("die nick~n")
 	end.
 
 user(User, RealName, Server, Socket)->
@@ -38,7 +42,7 @@ user(User, RealName, Server, Socket)->
             gen_tcp:send(Socket, ?REPLY_ALREADYREGISTERD)  
     end.
 
-nick(Nick, Server, Socket, UserPid)->
+nick(Nick, UserPid, Server, Socket)->
     case database:check_nick(Nick) of
         {_,[]} ->
             case database:check_socket(Socket) of
