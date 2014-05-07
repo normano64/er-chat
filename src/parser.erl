@@ -85,11 +85,10 @@ parser_test() ->
     Bin3 = <<?SLASHR,72,69,?SLASHR,?SPACE,76,76,?SLASHR,79,?SPACE>>,
     Bin4 = <<"USER guest 0 * :Ronald Mcdonald">>,
     Bin5 = <<"USER guest 0 *:Ronald Mcdonald">>,
+    Bin6 = <<":Prefix USER guest 0 * :Ronald Mcdonald">>,
     ?assertEqual(parse(Bin1),{noprefix,<<"HELLO">>,[]}),
     ?assertEqual(parse(Bin2),{noprefix,<<"H">>,[<<"E">>,<<"L">>,<<"L">>,<<"O">>]}),
     ?assertEqual(parse(Bin3),{noprefix,<<"HE">>,[<<"LL">>,<<"O">>,<<>>]}),
     ?assertEqual(parse(Bin4),{noprefix,<<"USER">>,[<<"guest">>,<<"0">>,<<"*">>,<<":Ronald Mcdonald">>]}),
-    ?assertEqual(parse(Bin5),{noprefix,<<"USER">>,[<<"guest">>,<<"0">>,<<"*:Ronald">>,<<"Mcdonald">>]}).
-
-
-
+    ?assertEqual(parse(Bin5),{noprefix,<<"USER">>,[<<"guest">>,<<"0">>,<<"*:Ronald">>,<<"Mcdonald">>]}),
+    ?assertEqual(parse(Bin6),{<<"Prefix">>,<<"USER">>,[<<"guest">>,<<"0">>,<<"*">>,<<":Ronald Mcdonald">>]}).
