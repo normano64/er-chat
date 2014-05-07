@@ -12,7 +12,7 @@
 -define(RPL_TOPIC, <<"332">>). % <channel> :<topic>
 
 -define(RPL_NAMREPLY, <<"353">>). % ( "=" / "*" / "@" ) <channel> :[ "@" / "+" ] <nick> *( " " [ "@" / "+" ] <nick> )
-
+-define(RPL_ENDOFNAMES, <<"366">>). %<channel> :End of NAMES list
 % Error replies 400-599
 -define(ERR_NOSUCHNICK, <<"401">>). % <nickname> :No such nick/channel
 -define(ERR_NOSUCHSERVER, <<"402">>). % <server name> :No such server"
@@ -45,3 +45,4 @@
 -define(REPLY_JOINTOPIC,[<<":">>,ServerHostent, <<" ">>, ?RPL_TOPIC, <<" ">>, Nick,<<" ">>,Channel,<<" ">>,<<":">>,Topic,<<"\r\n">>]).
 -define(REPLY_JOINNOTOPIC,[<<":">>,ServerHostent,<<" ">>, ?RPL_NOTOPIC, <<" ">>, Nick, <<" ">>,Channel,<<" :No topic is set\r\n">>]).
 -define(REPLY_JOINNAMREPLY,[<<":">>,ServerHostent, <<" ">>, ?RPL_NAMREPLY,<<" ">>, Nick,<<" = ">>,Channel,<<" :">>,UserList,<<"\r\n">>]).
+-define(REPLY_ENDOFNAMES, [<<":">>,ServerHostent, <<" ">>, ?RPL_ENDOFNAMES,<<" ">>, Nick,<<" ">>, Channel, <<" :End of NAMES list\r\n">>]).

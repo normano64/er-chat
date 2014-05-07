@@ -31,8 +31,8 @@ loop_other(Host,Socket, UserPid)->
 	{join, [Channel]} ->
 	    join(Channel,Host,Socket),
 	    loop_other(Host, Socket, UserPid);
-	{privmsg,[List]} ->
-	    privmsg(List,Host,Socket),
+	{privmsg,[Target, Message]} ->
+	    privmsg(Target, Message,Host,Socket),
 	    loop_other(Host, Socket, UserPid);
         {unknown, Command}->
             {_ServerIP,ServerHostent} = Host,
@@ -147,13 +147,15 @@ join(Channel, {_ServerIP,ServerHostent}, Socket)->
 		true ->
 		    gen_tcp:send(Socket,?REPLY_JOINTOPIC)
 	    end,
-	    gen_tcp:send(Socket,?REPLY_JOINNAMREPLY);
+	    gen_tcp:send(Socket,?REPLY_JOINNAMREPLY),
+	    gen_tcp:send(Socket,?REPLY_ENDOFNAMES);
 	_ ->
 	    database:insert_channel(Channel,{<<"@">>,Nick},<<"">>),
 	    UserList = [<<"@">>,Nick],
 	    gen_tcp:send(Socket,?REPLY_JOINCHANNEL),
-	    gen_tcp:send(Socket,?REPLY_JOINNAMREPLY)
+	    gen_tcp:send(Socket,?REPLY_JOINNAMREPLY),
+	    gen_tcp:send(Socket,?REPLY_ENDOFNAMES)
     end.
 
-privmsg(Message,{_ServerIp, ServerHostent} ,Socket)->
-    tbi.
+privmsg(Target,Message,{_ServerIp, ServerHostent} ,Socket)->
+ {_,[{channel,_,Users, Topic}]} = database:check_channel(Channel).
