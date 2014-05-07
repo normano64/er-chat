@@ -37,14 +37,14 @@ do_recv(Socket, Timeout, ParserPid, Host) ->
             case Timeout of
                 1 ->
 		    io:format("~p closed, reason: timeout~n",[Socket]),
-		    commands:quit(<<"">>, Host, Socket);
+		    commands:quit(<<"client timeout">>, Host, Socket);
                 _ ->
                     commands:ping(Host, Socket),
                     do_recv(Socket, 1, ParserPid, Host)
             end;
         {error, Reason} ->
             io:format("~p closed, reason: ~p~n", [Socket, Reason]),
-            commands:quit(list_to_binary(Reason), Socket),
+            commands:quit(<<"crash">>, Host, Socket),
             exit(Reason)
     end.
 
