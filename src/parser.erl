@@ -22,7 +22,10 @@ loop(UserPid,OtherPid)->
 		    loop(UserPid,OtherPid);
 		{<<"USER">>,List} ->
 		    UserPid ! {user,List},
-		    loop(UserPid,OtherPid)
+		    loop(UserPid,OtherPid);
+		{<<"PING">>,List} ->
+		    OtherPid ! {ping, List},
+		    loop(UserPid, OtherPid)
 		end
     end.
 

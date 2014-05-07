@@ -36,4 +36,4 @@
 -define(REPLY_NICKNAMEINUSE,[<<":">>, ServerHostent, <<" ">>, ?ERR_NICKNAMEINUSE, <<" * ">>, Nick, <<" :Nickname is already in use.\r\n">>]).
 -define(REPLY_PING,[<<"PING :">>, ServerHostent, <<"\r\n">>]).
 -define(REPLY_QUIT,[<<":">>, Nick, <<"!">>, User, <<"@">>, Hostent, <<" QUIT :">>, "Gone to buy cheese.", <<"\r\n">>]).
--define(REPLY_PONG,[<<"PONG ">>, ServerHostent, <<"\r\n">>]). 
+-define(REPLY_PONG,[<<"PONG ">>, ServerHostent,<<" ">>,Nick, <<"\r\n">>]). 

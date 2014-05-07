@@ -65,6 +65,7 @@ ping({ServerIP,ServerHostent}, Socket)->
     gen_tcp:send(Socket, ?REPLY_PING).
 
 pong({ServerIP,ServerHostent}, Socket)->
+    {_, Nick} = database:get_nick(Socket),
     gen_tcp:send(Socket, ?REPLY_PONG).  
 
 
