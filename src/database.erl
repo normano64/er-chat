@@ -1,18 +1,19 @@
 -module(database).
 -compile(export_all).
 -include_lib("eunit/include/eunit.hrl").
+-record(channel,{id, users, topic}).
 -record(user,{socket, user, nick, server,hostent, realname}).
--record(channel,{id, users}).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
 %                               Database functions                                          %
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-create_db(ListNodes)->
+create_db()->
+    ListNodes = [node()],
     mnesia:create_schema(ListNodes),
     mnesia:start(),
-    mnesia:create_table(user,[{attributes,record_info(fields,user)},{type,set}]).
-    %%mnesia:create_table(user,[{attributes,record_info(fields,user)},{disc_copies,ListNodes},{type,set}]).
+    mnesia:create_table(user,[{attributes,record_info(fields,user)},{type,set}]),
+    mnesia:create_table(channel,[{attributes,record_info(fields,channel)},{disc_copies,ListNodes},{type,set}]).
 
 traverse_table_and_show(Table_name)->
     Iterator =  fun(Rec,_)->
@@ -97,8 +98,8 @@ delete_socket(Socket)->
 %                               Channel Functions                                           %
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-insert_channel(ChannelName, User) ->
-    Data = #channel{id = ChannelName,users = [User]},
+insert_channel(ChannelName, User, Topic) ->
+    Data = #channel{id = ChannelName,users = [User], topic = Topic},
     F = fun()->
 		mnesia:write(Data)
 	end,
@@ -107,13 +108,17 @@ insert_channel(ChannelName, User) ->
 update_list(#channel{id = _Id,users = UserList}, User)->
     [User | UserList].
 
-join_channel(ChannelId, User)->
+join_channel(ChannelName, User)->
     F = fun()->
-		[Channel]= mnesia:read(ChannelId),
-		mnesia:write(Channel#channel{id = ChannelId,users=update_list(Channel,User)})
+		[Channel]= mnesia:wread({channel,ChannelName}),
+		mnesia:write(Channel#channel{id = ChannelName,users=update_list(Channel,User)})
 	end,
     mnesia:transaction(F).
-
+check_channel(ChannelName)->
+    F = fun()->
+		mnesia:read({channel,ChannelName})
+	end,
+    mnesia:transaction(F).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
 %                               EUnit database test                                         %

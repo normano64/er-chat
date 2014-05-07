@@ -28,6 +28,9 @@ loop_other(Host,Socket, UserPid)->
         {quit,[Message]} ->
 	    quit(Message, Host, Socket),
             loop_other(Host,Socket, UserPid);
+	{join, [Channel]} ->
+	    join(Channel,Host,Socket),
+	    loop_other(Host, Socket, UserPid);
         {unknown, Command}->
             {_ServerIP,ServerHostent} = Host,
             gen_tcp:send(Socket, ?REPLY_UNKNOWNCOMMAND),
@@ -74,7 +77,7 @@ user(User, RealName, {ServerIP,ServerHostent}, Socket, nick_ok)->
             gen_tcp:send(Socket, ?REPLY_ALREADYREGISTERD)
     end.
 
-nick(Nick, UserPid, {ServerIP,ServerHostent}, Socket)->
+nick(Nick, UserPid, {_ServerIP,ServerHostent}, Socket)->
     case database:check_nick(Nick) of
         {_,[]} ->
             case database:check_socket(Socket) of
@@ -91,15 +94,15 @@ nick(Nick, UserPid, {ServerIP,ServerHostent}, Socket)->
             gen_tcp:send(Socket, ?REPLY_NICKNAMEINUSE)
     end.
             
-ping({ServerIP,ServerHostent}, Socket)->
+ping({_ServerIP,ServerHostent}, Socket)->
     gen_tcp:send(Socket, ?REPLY_PING).
 
-pong({ServerIP,ServerHostent}, Server, Socket)->
+pong({_ServerIP,ServerHostent}, _Server, Socket)->
     {_, Nick} = database:get_nick(Socket),
     gen_tcp:send(Socket, ?REPLY_PONG).  
 
 
-quit(_Message, {ServerIP,ServerHostent}, Socket)->
+quit(_Message, {_ServerIP,_ServerHostent}, Socket)->
     case database:check_socket(Socket) of
         {_,[{user,_, User, Nick, _, Hostent, _}]} ->
             gen_tcp:send(Socket, ?REPLY_QUIT), 
@@ -110,10 +113,29 @@ quit(_Message, {ServerIP,ServerHostent}, Socket)->
 
 
 %% mode(, Socket)->
-%%     .
+%%  
+convert_nicklist([{Status,Nick}|T])->   
+    convert_nicklist(T,[Status,Nick]).
+convert_nicklist([], Ack)->
+    list_to_binary(Ack);
+convert_nicklist([{Status, Nick}|T], Ack)->
+    convert_nicklist(T,[Status, Nick,<<" ">>] ++ Ack).
 
-%% join(, Socket)->
-%%     .
+join(Channel, {_ServerIP,ServerHostent}, Socket)->
+    {_,[{user,_,User,Nick,_,Hostent,_}]} = database:check_socket(Socket),
+    UserList = [<<"@">>,Nick],
+    case database:check_channel(Channel) of
+	{_,[channel,_,Users]} ->
+	    database:join_channel(Channel,Nick),
+	    UserList = convert_nicklist(Users),
+	    gen_tcp:send(Socket,?REPLY_JOINCHANNEL),
+	    gen_tcp:send(Socket,?REPLY_JOINTOPIC),
+	    gen_tcp:send(Socket,?REPLY_JOINNAMREPLY);
+	_ ->
+	    database:insert_channel(Channel,{<<"@">>,Nick},<<"">>),
+	    gen_tcp:send(Socket,?REPLY_JOINCHANNEL),
+	    gen_tcp:send(Socket,?REPLY_JOINNAMREPLY)
+    end.
 
 %% privmsg(, Socket)->
 %%     .

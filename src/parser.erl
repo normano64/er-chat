@@ -29,6 +29,9 @@ loop(UserPid,OtherPid)->
                 {<<"QUIT">>,List} ->
 		    OtherPid ! {quit, List},
 		    loop(UserPid, OtherPid);
+		{<<"JOIN">>, List}->
+		    OtherPid ! {join, List},
+		    loop(UserPid, OtherPid);
                 {Command,_} ->
                     OtherPid ! {unknown, Command},
                     loop(UserPid, OtherPid)
