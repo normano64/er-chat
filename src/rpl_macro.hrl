@@ -17,9 +17,12 @@
 -define(ERR_NOSUCHNICK, <<"401">>). % <nickname> :No such nick/channel
 -define(ERR_NOSUCHSERVER, <<"402">>). % <server name> :No such server"
 
+-define(ERR_UNKNOWNCOMMAND, <<"421">>). %% <command> :Unknown command
+
 -define(ERR_NICKNAMEINUSE, <<"433">>). % <nick> :Nickname is already in use
 
 -define(ERR_ALREADYREGISTRED, <<"462">>). % <nick> :Nickname is already in use
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,4 +39,5 @@
 -define(REPLY_NICKNAMEINUSE,[<<":">>, ServerHostent, <<" ">>, ?ERR_NICKNAMEINUSE, <<" * ">>, Nick, <<" :Nickname is already in use.\r\n">>]).
 -define(REPLY_PING,[<<"PING :">>, ServerHostent, <<"\r\n">>]).
 -define(REPLY_QUIT,[<<":">>, Nick, <<"!">>, User, <<"@">>, Hostent, <<" QUIT :">>, "Gone to buy cheese.", <<"\r\n">>]).
--define(REPLY_PONG,[<<"PONG ">>, ServerHostent, <<"\r\n">>]). 
+-define(REPLY_PONG,[<<"PONG ">>, ServerHostent,<<" ">>,Nick, <<"\r\n">>]).
+-define(REPLY_UNKNOWNCOMMAND,[<<":">>, ServerHostent,<<" ">>,?ERR_UNKNOWNCOMMAND, <<" ">>, Command, <<" :Unknown command\r\n">>]).

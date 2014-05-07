@@ -22,7 +22,16 @@ loop(UserPid,OtherPid)->
 		    loop(UserPid,OtherPid);
 		{_,<<"USER">>,List} ->
 		    UserPid ! {user,List},
-		    loop(UserPid,OtherPid)
+		    loop(UserPid,OtherPid);
+		{<<"PING">>,List} ->
+		    OtherPid ! {ping, List},
+		    loop(UserPid, OtherPid);
+                {<<"QUIT">>,List} ->
+		    OtherPid ! {quit, List},
+		    loop(UserPid, OtherPid);
+                {Command,_} ->
+                    OtherPid ! {unknown, Command},
+                    loop(UserPid, OtherPid)
 		end
     end.
 

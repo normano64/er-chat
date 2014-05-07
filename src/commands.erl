@@ -7,6 +7,12 @@ loop_user(Host,Socket)->
 	{user,[User,_Steps,_Star,RealName]} ->
 	    user(User,RealName,Host,Socket),
 	    loop_user(Host,Socket);
+        {nick_ok}->
+            receive
+                {user,[User,_Steps,_Star,RealName]} ->
+                    user(User,RealName,Host,Socket,nick_ok)
+            end,
+            loop_user(Host,Socket);
         Error ->
             io:format("Error user:~p~n",[Error])
     end.
@@ -17,7 +23,14 @@ loop_other(Host,Socket, UserPid)->
 	    nick(Nick, UserPid, Host, Socket),
 	    loop_other(Host, Socket, UserPid);
         {ping,[Server]} ->
-	    pong(Server, Socket),
+	    pong(Host, Server, Socket),
+            loop_other(Host,Socket, UserPid);
+        {quit,[Message]} ->
+	    quit(Message, Host, Socket),
+            loop_other(Host,Socket, UserPid);
+        {unknown, Command}->
+            {_ServerIP,ServerHostent} = Host,
+            gen_tcp:send(Socket, ?REPLY_UNKNOWNCOMMAND),
             loop_other(Host,Socket, UserPid);
         Error ->
             io:format("Error nick:~p~n",[Error])
@@ -43,6 +56,23 @@ user(User, RealName, {ServerIP,ServerHostent}, Socket)->
             {_,Nick} = database:get_nick(Socket),
             gen_tcp:send(Socket, ?REPLY_ALREADYREGISTERD)  
     end.
+user(User, RealName, {ServerIP,ServerHostent}, Socket, nick_ok)->
+    case database:check_socket(Socket) of
+        {_,UserTuple} when is_list(UserTuple) orelse element(2,UserTuple) == empty ->
+            {_,Nick} = database:get_nick(Socket),
+            if
+                Nick =/= [] ->
+                    {_,Port} = inet:port(Socket),
+                    database:update_user(Socket, User, RealName),
+                    gen_tcp:send(Socket, ?REPLY_WELCOME), 
+                    gen_tcp:send(Socket, ?REPLY_YOURHOST);
+                true ->
+                    nick_not_registered
+            end;
+        _ ->
+            {_,Nick} = database:get_nick(Socket),
+            gen_tcp:send(Socket, ?REPLY_ALREADYREGISTERD)
+    end.
 
 nick(Nick, UserPid, {ServerIP,ServerHostent}, Socket)->
     case database:check_nick(Nick) of
@@ -64,7 +94,8 @@ nick(Nick, UserPid, {ServerIP,ServerHostent}, Socket)->
 ping({ServerIP,ServerHostent}, Socket)->
     gen_tcp:send(Socket, ?REPLY_PING).
 
-pong({ServerIP,ServerHostent}, Socket)->
+pong({ServerIP,ServerHostent}, Server, Socket)->
+    {_, Nick} = database:get_nick(Socket),
     gen_tcp:send(Socket, ?REPLY_PONG).  
 
 
