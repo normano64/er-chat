@@ -23,16 +23,19 @@ loop(UserPid,OtherPid)->
 		{_,<<"USER">>,List} ->
 		    UserPid ! {user,List},
 		    loop(UserPid,OtherPid);
-		{<<"PING">>,List} ->
+		{_,<<"PING">>,List} ->
 		    OtherPid ! {ping, List},
 		    loop(UserPid, OtherPid);
-                {<<"QUIT">>,List} ->
+                {_,<<"QUIT">>,List} ->
 		    OtherPid ! {quit, List},
 		    loop(UserPid, OtherPid);
-		{<<"JOIN">>, List}->
+		{_,<<"JOIN">>, List}->
 		    OtherPid ! {join, List},
 		    loop(UserPid, OtherPid);
-                {Command,_} ->
+		{_,<<"PRIVMSG">>, List}->
+		    OtherPid ! {privmsg, List},
+		    loop(UserPid, OtherPid);
+                {_,Command,_} ->
                     OtherPid ! {unknown, Command},
                     loop(UserPid, OtherPid)
 		end
@@ -57,7 +60,7 @@ parse(Bitstring) ->
     case Bitstring_noR of
 	<<$:, Rest/binary>> ->
 	    {Pos,_} = binary:match(Rest,<<?SPACE>>),
-	    <<Prefix:Pos/binary, Unused:1/binary, Bitstring_noPrefix/binary>> = Rest;
+	    <<Prefix:Pos/binary, _Unused:1/binary, Bitstring_noPrefix/binary>> = Rest;
 	_ ->
 	    Prefix = noprefix,
 	    Bitstring_noPrefix = Bitstring_noR

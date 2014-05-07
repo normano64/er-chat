@@ -42,5 +42,6 @@
 -define(REPLY_PONG,[<<"PONG ">>, ServerHostent,<<" ">>,Nick, <<"\r\n">>]).
 -define(REPLY_UNKNOWNCOMMAND,[<<":">>, ServerHostent,<<" ">>,?ERR_UNKNOWNCOMMAND, <<" ">>, Command, <<" :Unknown command\r\n">>]).
 -define(REPLY_JOINCHANNEL,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" JOIN :">>,Channel,<<"\r\n">>]).
--define(REPLY_JOINTOPIC,[<<":">>,ServerHostent, <<" ">>, ?RPL_TOPIC, <<" ">>, Nick,<<" = ">>,<<":your topic\r\n">>]).
+-define(REPLY_JOINTOPIC,[<<":">>,ServerHostent, <<" ">>, ?RPL_TOPIC, <<" ">>, Nick,<<" ">>,Channel,<<" ">>,<<":">>,Topic,<<"\r\n">>]).
+-define(REPLY_JOINNOTOPIC,[<<":">>,ServerHostent,<<" ">>, ?RPL_NOTOPIC, <<" ">>, Nick, <<" ">>,Channel,<<" :No topic is set\r\n">>]).
 -define(REPLY_JOINNAMREPLY,[<<":">>,ServerHostent, <<" ">>, ?RPL_NAMREPLY,<<" ">>, Nick,<<" = ">>,Channel,<<" :">>,UserList,<<"\r\n">>]).

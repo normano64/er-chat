@@ -31,6 +31,9 @@ loop_other(Host,Socket, UserPid)->
 	{join, [Channel]} ->
 	    join(Channel,Host,Socket),
 	    loop_other(Host, Socket, UserPid);
+	{privmsg,[List]} ->
+	    privmsg(List,Host,Socket),
+	    loop_other(Host, Socket, UserPid);
         {unknown, Command}->
             {_ServerIP,ServerHostent} = Host,
             gen_tcp:send(Socket, ?REPLY_UNKNOWNCOMMAND),
@@ -114,28 +117,43 @@ quit(_Message, {_ServerIP,_ServerHostent}, Socket)->
 
 %% mode(, Socket)->
 %%  
+convert_nicklist([])->
+    <<"">>;
 convert_nicklist([{Status,Nick}|T])->   
     convert_nicklist(T,[Status,Nick]).
 convert_nicklist([], Ack)->
     list_to_binary(Ack);
 convert_nicklist([{Status, Nick}|T], Ack)->
     convert_nicklist(T,[Status, Nick,<<" ">>] ++ Ack).
+send_join_replies([],_Socket,_Channel)->
+    ok;
+send_join_replies([{_Status, NickDb}|T],Socket,Channel)->
+    {_,[{user,_,User,Nick,_,Hostent,_}]} = database:check_socket(Socket),
+    {_,[{user,SocketToSendTo,_,_,_,_,_}]} = database:check_nick(NickDb),
+    gen_tcp:send(SocketToSendTo,?REPLY_JOINCHANNEL),
+    send_join_replies(T,Socket,Channel).
 
 join(Channel, {_ServerIP,ServerHostent}, Socket)->
     {_,[{user,_,User,Nick,_,Hostent,_}]} = database:check_socket(Socket),
-    UserList = [<<"@">>,Nick],
     case database:check_channel(Channel) of
-	{_,[channel,_,Users]} ->
+	{_,[{channel,_,Users, Topic}]} ->
 	    database:join_channel(Channel,Nick),
 	    UserList = convert_nicklist(Users),
+	    send_join_replies(Users,Socket,Channel),
 	    gen_tcp:send(Socket,?REPLY_JOINCHANNEL),
-	    gen_tcp:send(Socket,?REPLY_JOINTOPIC),
+	    if
+		Topic == <<"">> ->
+		    gen_tcp:send(Socket,?REPLY_JOINNOTOPIC); 
+		true ->
+		    gen_tcp:send(Socket,?REPLY_JOINTOPIC)
+	    end,
 	    gen_tcp:send(Socket,?REPLY_JOINNAMREPLY);
 	_ ->
 	    database:insert_channel(Channel,{<<"@">>,Nick},<<"">>),
+	    UserList = [<<"@">>,Nick],
 	    gen_tcp:send(Socket,?REPLY_JOINCHANNEL),
 	    gen_tcp:send(Socket,?REPLY_JOINNAMREPLY)
     end.
 
-%% privmsg(, Socket)->
-%%     .
+privmsg(Message,{_ServerIp, ServerHostent} ,Socket)->
+    tbi.
