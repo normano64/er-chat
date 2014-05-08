@@ -14,66 +14,72 @@
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-loop(UserPid,OtherPid)->
-    receive {ok,Message}-> 
-	    case parse(Message) of
-		{_,<<"NICK">>,List}-> 
-		    OtherPid ! {nick,List},
-		    loop(UserPid,OtherPid);
-		{_,<<"USER">>,List} ->
-		    UserPid ! {user,List},
-		    loop(UserPid,OtherPid);
-		{_,<<"PING">>,List} ->
-		    OtherPid ! {ping, List},
-		    loop(UserPid, OtherPid);
+loop(UserPid,OtherPid) ->
+    receive {ok,Message} ->
+            case parse(Message) of
+                {_,<<"NICK">>,List} ->
+                    OtherPid ! {nick,List},
+                    loop(UserPid,OtherPid);
+                {_,<<"USER">>,List} ->
+                    UserPid ! {user,List},
+                    loop(UserPid,OtherPid);
+                {_,<<"PING">>,List} ->
+                    OtherPid ! {ping,List},
+                    loop(UserPid,OtherPid);
+                {_,<<"PONG">>,List} ->
+                    OtherPid ! {pong,List},
+                    loop(UserPid,OtherPid);
                 {_,<<"QUIT">>,List} ->
-		    OtherPid ! {quit, List},
-		    loop(UserPid, OtherPid);
-		{_,<<"JOIN">>, List}->
-		    OtherPid ! {join, List},
-		    loop(UserPid, OtherPid);
-		{_,<<"PRIVMSG">>, List}->
-		    OtherPid ! {privmsg, List},
-		    loop(UserPid, OtherPid);
+                    OtherPid ! {quit,List},
+                    loop(UserPid,OtherPid);
+                {_,<<"JOIN">>,List} ->
+                    OtherPid ! {join,List},
+                    loop(UserPid,OtherPid);
+                {_,<<"PRIVMSG">>,List} ->
+                    OtherPid ! {privmsg,List},
+                    loop(UserPid,OtherPid);
+                {_,<<"PART">>,List} ->
+                    OtherPid ! {part,List},
+                    loop(UserPid,OtherPid);
                 {_,Command,_} ->
-                    OtherPid ! {unknown, Command},
-                    loop(UserPid, OtherPid)
-		end
+                    OtherPid ! {unknown,Command},
+                    loop(UserPid,OtherPid)
+                end
     end.
 
-%% @doc The parse function takes a binary string and formates it to a tuple {Prefix/binary, Command/binary, [Parameters/binary]}.
+%% @doc The parse function takes a binary string and formates it to a tuple {Prefix/binary,Command/binary,[Parameters/binary]}.
 %%
 %%== Example ==
 %% parse(<<"USER GUEST 0 * :Ronald Mcdonald">>)
-%% {noprefix, <<"USER">>,[<<"guest">>,<<"0">>,<<"*">>,<<":Ronald Mcdonald">>]}
+%% {noprefix,<<"USER">>,[<<"guest">>,<<"0">>,<<"*">>,<<":Ronald Mcdonald">>]}
 %%
 %%WEAKNESSES OF PARSE
 %%It cannot handle multiple spaces following eachother and will then generate empty parameters <<>>.
 %%If a colon isn't preceded by a space it will not be placed in Colonpart.
-%%Everything after " :" will be placed in the Colonpart and will not acted upon anymore, even another " :".
+%%Everything after " :" will be placed in the Colonpart and will not acted upon anymore,even another " :".
 %%Handling of prefix is not complete and bugfree.
 
 parse(Bitstring) ->
 %%Remove Carriage Return.
-    Bitstring_noR = << <<Bitstring_noR>> || <<Bitstring_noR>> <= Bitstring, Bitstring_noR =/= ?SLASHR>>,
+    Bitstring_noR = << <<Bitstring_noR>> || <<Bitstring_noR>> <= Bitstring,Bitstring_noR =/= ?SLASHR>>,
 %%Trims of the prefix.
     case Bitstring_noR of
-	<<$:, Rest/binary>> ->
-	    {Pos,_} = binary:match(Rest,<<?SPACE>>),
-	    <<Prefix:Pos/binary, _Unused:1/binary, Bitstring_noPrefix/binary>> = Rest;
-	_ ->
-	    Prefix = noprefix,
-	    Bitstring_noPrefix = Bitstring_noR
-	end,
+        <<$:,Rest/binary>> ->
+            {Pos,_} = binary:match(Rest,<<?SPACE>>),
+            <<Prefix:Pos/binary,_Unused:1/binary,Bitstring_noPrefix/binary>> = Rest;
+        _ ->
+            Prefix = noprefix,
+            Bitstring_noPrefix = Bitstring_noR
+        end,
     %%Splits the Bitstring at the Colonpart if it exists.
-    [Bitstring_noColon|Colonpart] = binary:split(Bitstring_noPrefix, <<?SPACE,?COLON>>, [global]),
+    [Bitstring_noColon|Colonpart] = binary:split(Bitstring_noPrefix,<<?SPACE,?COLON>>,[global]),
     %%Splits the rest at spaces.
-    Bitlist = binary:split(Bitstring_noColon, <<?SPACE>>, [global]),
+    Bitlist = binary:split(Bitstring_noColon,<<?SPACE>>,[global]),
     %%Appends all the parts and return.
     Bitlist_complete = Bitlist ++ Colonpart,
     [Command|Parameters] = Bitlist_complete,
     {Prefix,Command,Parameters}.
-    
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
