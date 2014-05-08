@@ -46,3 +46,4 @@
 -define(REPLY_JOINNOTOPIC,[<<":">>,ServerHostent,<<" ">>, ?RPL_NOTOPIC, <<" ">>, Nick, <<" ">>,Channel,<<" :No topic is set\r\n">>]).
 -define(REPLY_JOINNAMREPLY,[<<":">>,ServerHostent, <<" ">>, ?RPL_NAMREPLY,<<" ">>, Nick,<<" = ">>,Channel,<<" :">>,UserList,<<"\r\n">>]).
 -define(REPLY_ENDOFNAMES, [<<":">>,ServerHostent, <<" ">>, ?RPL_ENDOFNAMES,<<" ">>, Nick,<<" ">>, Channel, <<" :End of NAMES list\r\n">>]).
+-define(REPLY_PRIVMSG, [<<":">>, Nick, <<"!">>, User, <<"@">>, Hostent,<<" PRIVMSG ">>, Target, <<" :">>, Message, <<"\r\n">>]).
