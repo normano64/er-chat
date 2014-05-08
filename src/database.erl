@@ -135,7 +135,7 @@ extract_nick([],_Nick,Ack)->
 extract_nick([H|T], Nick,Ack) ->
     if
 	H == Nick ->
-	    T ++ Ack;
+	    [T|Ack];
 	true ->
 	    extract_nick(T,Nick,[H|Ack])
     end.
@@ -145,18 +145,26 @@ part_channel(ChannelName, Nick, Socket)->
 		[Channel] = mnesia:wread({channel, ChannelName}),
 		[User] = mnesia:wread({user,Socket}),
 		
-		{_, [{_, _Name, UserList, _Topic}]} = check_channel(ChannelName),
-		NewUserList = lists:delete(Nick,UserList),
+		{_, [{_, _Name, NickList, _Topic}]} = check_channel(ChannelName),
+		NewNickList = lists:delete(Nick,NickList),
 		{_,[{_,_,_,_,_,_,_,ChannelList}]} = check_socket(Socket),
 		NewChannelList = lists:delete(ChannelName,ChannelList),
 
-		mnesia:write(Channel#channel{users=NewUserList}),
+		mnesia:write(Channel#channel{users=NewNickList}),
 		mnesia:write(User#user{channel_list=NewChannelList})
 	end,
     mnesia:transaction(F).
 
-change_channel_nick()->
-    tbi.
+change_channel_nick(ChannelName,NewNick,Socket)->
+    F = fun() ->
+		[Channel] = mnesia:wread({channel, ChannelName}),
+		{_, [{_, _Name, NickList, _Topic}]} = check_channel(ChannelName),
+		{_,Nick} = get_nick(Socket),
+		NewNickList = lists:delete(Nick,NickList),
+		NewNickList2 = lists:append([NewNick], NewNickList),
+		mnesia:write(Channel#channel{users= NewNickList2})
+	end,
+    mnesia:transaction(F).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
 %                               EUnit database test                                         %
@@ -168,16 +176,16 @@ get_head([])->
 get_head([H|_T])->
     H.
 
-%%update_list_test()->
-  %%  Channel = #channel{id="ost",users = [{[o,a], "mumin"}, {[r,a],"hemulen"}]},
-  %%  TestList = update_list(Channel,{[o],"korv"}),
-  %%  {[H|_T],Name} = get_head(TestList),
-  %%  [?assertEqual(H,o),
-  %%  ?assertEqual(Name,"korv")
-  %%  ].
+%% update_list_test()->
+%%    Channel = #channel{id="ost",users = [{[o,a], "mumin"}, {[r,a],"hemulen"}]},
+%%    TestList = update_list(Channel,{[o],"korv"}),
+%%    {[H|_T],Name} = get_head(TestList),
+%%    [?assertEqual(H,o),
+%%    ?assertEqual(Name,"korv")
+%%    ].
 
-%%database_test()->
-  %%  create_db([node()]),
-   %% insert_user("Perkson",12321,"servername"),
-   %% {_,User} = query_database("Perkson"),
-   %% ?assertEqual(User,[{user,"Perkson","pettsson",["socker","salt"],12321,"servername"}]).
+%% database_test()->
+%%    create_db([node()]),
+%%    insert_user("Perkson",12321,"servername"),
+%%    {_,User} = query_database("Perkson"),
+%%    ?assertEqual(User,[{user,"Perkson","pettsson",["socker","salt"],12321,"servername"}]).
