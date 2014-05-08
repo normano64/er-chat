@@ -101,10 +101,14 @@ delete_socket(Socket)->
 find_channellist({_,_,_,_,_,_,_,ChannelList})->
     ChannelList.
 
-insert_channel(ChannelName, User, Topic) ->
-    Data = #channel{id = ChannelName,users = [User], topic = Topic},
+insert_channel(ChannelName, Nick, Topic) ->
+    Data = #channel{id = ChannelName,users = [Nick], topic = Topic},
     F = fun()->
-		mnesia:write(Data)
+		mnesia:write(Data),
+		{_,{_,Socket, _User, _Nick, _Server, _Hostent, _RealName, ChannelList}} = check_nick(Nick),
+		[User] = mnesia:wread({user, Socket}),
+		NewChannelList = [ChannelName | ChannelList],
+		mnesia:write(User#user{channel_list = NewChannelList})
 	end,
     mnesia:transaction(F).
 
