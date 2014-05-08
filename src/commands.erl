@@ -88,6 +88,20 @@ user(User,RealName,{ServerIP,ServerHostent},Socket,nick_ok) ->
             gen_tcp:send(Socket,?REPLY_ALREADYREGISTERD)
     end.
 
+channel_change_nick([],_NewNick,UserList,_Socket) ->
+    UserList;
+channel_change_nick([H|T],NewNick,UserList,Socket) ->
+    {_,[{channel,_Channel,NickList,_Topic}]} = database:check_channel(H),
+    database:change_channel_nick(H,NewNick,Socket),
+    channel_change_nick(T,NewNick,lists:umerge(UserList,NickList),Socket).
+
+send_new_nick([],OldNick,NewNick,User,Hostent) ->
+    ok;
+send_new_nick([{_,SendToNick}|T],OldNick,Nick,User,Hostent) ->
+    {_,{user,Socket,_Users,_Nick,_Server,_Hostent,_RealName,_ChannelList}} = database:check_nick(SendToNick),
+    gen_tcp:send(Socket,?REPLY_UPDATENICK),
+    send_new_nick(T,OldNick,Nick,User,Hostent).
+
 nick(Nick,UserPid,{_ServerIP,ServerHostent},Socket) ->
     case database:check_nick(Nick) of
         {_,[]} ->
@@ -97,10 +111,12 @@ nick(Nick,UserPid,{_ServerIP,ServerHostent},Socket) ->
                     {_,{_,Hostent,_,_,_,_}} = inet:gethostbyaddr(IP),
                     database:insert_user(Socket,empty,Nick,ServerHostent,list_to_binary(Hostent),empty),
                     UserPid ! {nick_ok};
-                {_,[{user,_,User,OldNick,_,Hostent,_,_}]} ->
+                {_,[{user,_,User,OldNick,_,Hostent,_,ChannelList}]} ->
+                    UserList = channel_change_nick(ChannelList,Nick,[],Socket),
+                    NewUserList = lists:keydelete(OldNick,2,UserList),
+                    send_new_nick(NewUserList,OldNick,Nick,User,Hostent),
                     database:update_nick(Socket,Nick),
                     gen_tcp:send(Socket,?REPLY_UPDATENICK)
-                    %%send_new_nick(OldNick,Nick,User,Hostent,)
             end;
         _  ->
             gen_tcp:send(Socket,?REPLY_NICKNAMEINUSE)

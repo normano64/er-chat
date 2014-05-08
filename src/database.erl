@@ -160,7 +160,7 @@ change_channel_nick(ChannelName,NewNick,Socket)->
 		[Channel] = mnesia:wread({channel, ChannelName}),
 		{_, [{_, _Name, NickList, _Topic}]} = check_channel(ChannelName),
 		{_,Nick} = get_nick(Socket),
-		{Status, _Nick} = lists:keysearch(Nick,2,NickList),
+		{value,{Status, _Nick}} = lists:keysearch(Nick,2,NickList),
 		NewNickList = lists:keyreplace(Nick,2,NickList,{Status,NewNick}),
 		mnesia:write(Channel#channel{users= NewNickList})
 	end,
