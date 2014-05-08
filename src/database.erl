@@ -2,7 +2,7 @@
 -compile(export_all).
 -include_lib("eunit/include/eunit.hrl").
 -record(channel,{id, users, topic}).
--record(user,{socket, user, nick, server,hostent, realname}).
+-record(user,{socket, user, nick, server,hostent, realname, channel_list}). %%add channel list
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
 %                               Database functions                                          %
@@ -41,7 +41,7 @@ stop()->
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 insert_user(Socket,User,Nick,Server,Hostent,Realname)->
-    Data = #user{socket=Socket,user=User,nick=Nick, server=Server,hostent=Hostent, realname=Realname},
+    Data = #user{socket=Socket,user=User,nick=Nick, server=Server,hostent=Hostent, realname=Realname, channel_list = []},
     F = fun() ->
 		mnesia:write(Data)
 	end,
@@ -56,14 +56,14 @@ check_socket(Socket)->
 
 check_nick(Nick)->
     F = fun() ->
-		Found = mnesia:match_object({user,'_','_',Nick,'_','_','_'}),
+		Found = mnesia:match_object({user,'_','_',Nick,'_','_','_','_'}),
 		Found
 	end,
     mnesia:transaction(F).
 
 find_nick([])->
     [];
-find_nick({_,_,_,Nick,_,_,_})->
+find_nick({_,_,_,Nick,_,_,_,_})->
     Nick.
 
 get_nick(Socket)->
@@ -98,6 +98,9 @@ delete_socket(Socket)->
 %                               Channel Functions                                           %
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+find_channellist({_,_,_,_,_,_,_,ChannelList})->
+    ChannelList.
+
 insert_channel(ChannelName, User, Topic) ->
     Data = #channel{id = ChannelName,users = [User], topic = Topic},
     F = fun()->
@@ -108,10 +111,15 @@ insert_channel(ChannelName, User, Topic) ->
 update_list(#channel{id = _Id,users = UserList}, User)->
     [User | UserList].
 
-join_channel(ChannelName, User)->
+join_channel(ChannelName, Nick, Socket)->
     F = fun()->
 		[Channel]= mnesia:wread({channel,ChannelName}),
-		mnesia:write(Channel#channel{id = ChannelName,users=update_list(Channel,User)})
+		mnesia:write(Channel#channel{id = ChannelName,users=update_list(Channel,Nick)}),
+		{_,List} = check_socket(Socket),
+		ChannelList = find_channellist(get_head(List)),
+		[P] =  mnesia:wread({user,Socket}),
+		mnesia:write(P#user{channel_list = [ChannelName | ChannelList]})
+		
 	end,
     mnesia:transaction(F).
 check_channel(ChannelName)->
@@ -119,6 +127,36 @@ check_channel(ChannelName)->
 		mnesia:read({channel,ChannelName})
 	end,
     mnesia:transaction(F).
+
+extract_nick(List,Nick)->
+    extract_nick(List,Nick,[]).
+extract_nick([],_Nick,Ack)->
+    Ack;
+extract_nick([H|T], Nick,Ack) ->
+    if
+	H == Nick ->
+	    T ++ Ack;
+	true ->
+	    extract_nick(T,Nick,[H|Ack])
+    end.
+
+part_channel(ChannelName, Nick, Socket)->
+    F = fun() ->
+		[Channel] = mnesia:wread({channel, ChannelName}),
+		[User] = mnesia:wread({user,Socket}),
+		
+		{_, [{_, _Name, UserList, _Topic}]} = check_channel(ChannelName),
+		NewUserList = lists:delete(Nick,UserList),
+		{_,[{_,_,_,_,_,_,_,ChannelList}]} = check_socket(Socket),
+		NewChannelList = lists:delete(ChannelName,ChannelList),
+
+		mnesia:write(Channel#channel{users=NewUserList}),
+		mnesia:write(User#user{channel_list=NewChannelList})
+	end,
+    mnesia:transaction(F).
+
+change_channel_nick()->
+    tbi.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
 %                               EUnit database test                                         %
