@@ -41,6 +41,9 @@ loop(UserPid,OtherPid) ->
                 {_,<<"PART">>,List} ->
                     OtherPid ! {part,List},
                     loop(UserPid,OtherPid);
+                {_,<<"WHOIS">>,List} ->
+                    OtherPid ! {whois,List},
+                    loop(UserPid,OtherPid);
                 {_,Command,_} ->
                     OtherPid ! {unknown,Command},
                     loop(UserPid,OtherPid)

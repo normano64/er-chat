@@ -46,7 +46,7 @@ loop_other(Host,Socket,UserPid) ->
             ChannelList = binary:split(Channels,<<",">>),
             part(ChannelList,<<"">>,Host,Socket),
             loop_other(Host,Socket,UserPid);
-	{whois, [Target]} ->
+	{whois,Target} ->
 	    whois(Target, Host, Socket),
 	    loop_other(Host, Socket, UserPid);
         {unknown,Command} ->
