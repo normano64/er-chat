@@ -46,6 +46,9 @@ loop_other(Host,Socket,UserPid) ->
             ChannelList = binary:split(Channels,<<",">>),
             part(ChannelList,<<"">>,Host,Socket),
             loop_other(Host,Socket,UserPid);
+	{whois, [Target]} ->
+	    whois(Target, Host, Socket),
+	    loop_other(Host, Socket, UserPid);
         {unknown,Command} ->
             {_ServerIP,ServerHostent} = Host,
             gen_tcp:send(Socket,?REPLY_UNKNOWNCOMMAND),
@@ -175,7 +178,7 @@ privmsg(Target,Message,{_ServerIP,_ServerHostent},Socket) ->
             end;
         nomatch ->
             case database:check_nick(Target) of
-                {_,[{user,TargetSocket,_UserTarget,Target,_,HostentTarget,_,_ChannelList}]} ->
+                {_,[{user,TargetSocket,_UserTarget,Target,_,_HostentTarget,_,_ChannelList}]} ->
                     {_,[{user,_,User,Nick,_,Hostent,_,_}]} = database:check_socket(Socket),
                     gen_tcp:send(TargetSocket,?REPLY_PRIVMSG);
                 _ ->
@@ -200,3 +203,15 @@ part([Target|Tail],Message,{ServerIP,ServerHostent},Socket) ->
             end
     end,
     part(Tail,Message,{ServerIP,ServerHostent},Socket).
+
+whois(Target, {_ServerIp, ServerHostent}, Socket)->
+    {_,[{user,_,_,Nick,_,_,_,_ChannelList}]} = database:check_socket(Socket),
+    case database:check_nick(Target) of
+	{_,[{user,_,_TargetUser,_,UserServer,UserHostent,TargetRealName,_ChannelList}]} ->
+	    gen_tcp:send(Socket,?REPLY_WHOISUSER), 
+	    gen_tcp:send(Socket,?REPLY_WHOISSERVER),
+	    gen_tcp:send(Socket,?REPLY_ENDOFWHOIS);
+	_ ->
+	    gen_tcp:send(Socket,?REPLY_NOSUCHNICK),
+	    gen_tcp:send(Socket,?REPLY_ENDOFWHOIS)
+    end.
