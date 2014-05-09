@@ -98,7 +98,7 @@ channel_change_nick([H|T],NewNick,UserList,Socket) ->
 send_new_nick([],OldNick,NewNick,User,Hostent) ->
     ok;
 send_new_nick([{_,SendToNick}|T],OldNick,Nick,User,Hostent) ->
-    {_,{user,Socket,_Users,_Nick,_Server,_Hostent,_RealName,_ChannelList}} = database:check_nick(SendToNick),
+    {_,[{user,Socket,_,_,_Server,_,_RealName,_ChannelList}]} = database:check_nick(SendToNick),
     gen_tcp:send(Socket,?REPLY_UPDATENICK),
     send_new_nick(T,OldNick,Nick,User,Hostent).
 
