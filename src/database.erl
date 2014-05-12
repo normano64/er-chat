@@ -1,3 +1,5 @@
+%% @author Sam, Mattias, Ludwing, Per och Tomas
+%% @doc Database
 -module(database).
 -compile(export_all).
 -include_lib("eunit/include/eunit.hrl").
@@ -8,12 +10,21 @@
 %                               Database functions                                          %
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%% @doc The create_db starts the database nodes and creates two tables; user and channels
+
 create_db()->
     ListNodes = [node()],
     mnesia:create_schema(ListNodes),
     mnesia:start(),
     mnesia:create_table(user,[{attributes,record_info(fields,user)},{type,set}]),
     mnesia:create_table(channel,[{attributes,record_info(fields,channel)},{disc_copies,ListNodes},{type,set}]).
+
+
+%% @doc traverse_table_and_show, This function simply traverse the desired table
+%% in the database and prints it in the shell
 
 traverse_table_and_show(Table_name)->
     Iterator =  fun(Rec,_)->
@@ -40,6 +51,15 @@ stop()->
 %                               Socket/nick functions                                       %
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+%%  @doc insert_user, This function inserts a user in the Database.
+%%  It's parameters are the values of the columns in the table.
+%%  The user can then be then later be found with it's unique socket
+
+
+
 insert_user(Socket,User,Nick,Server,Hostent,Realname)->
     Data = #user{socket=Socket,user=User,nick=Nick, server=Server,hostent=Hostent, realname=Realname, channel_list = []},
     F = fun() ->
@@ -101,19 +121,35 @@ delete_socket(Socket)->
 find_channellist({_,_,_,_,_,_,_,ChannelList})->
     ChannelList.
 
+
+
+%% @doc	insert_channel,	This function creates a channel where the id is the parameter ChannelName with only one user (specified as in the parameter Nick)
+%% The name of the topic is specified in the last parameter Topic 
+
+
 insert_channel(ChannelName, Nick, Topic) ->
     Data = #channel{id = ChannelName,users = [Nick], topic = Topic},
     F = fun()->
 		mnesia:write(Data),
-		{_,{_,Socket, _User, _Nick, _Server, _Hostent, _RealName, ChannelList}} = check_nick(Nick),
-		[User] = mnesia:wread({user, Socket}),
+
+		%Below is the original code
+		%{_,[{_,Socket, _User, _Nick, _Server, _Hostent, _RealName, ChannelList}]} = check_nick(Nick),
+
+		%Below is not the original code, it is a working version
+		{_,[{_,Socket,_User,_Nick,_Server,_Hostent,_RealName,ChannelList}|_]}= check_nick(Nick), %We need to find the Socket of the nick 
+		[User] = mnesia:wread({user, Socket}), %here we extract the user from the table user
 		NewChannelList = [ChannelName | ChannelList],
-		mnesia:write(User#user{channel_list = NewChannelList})
+		mnesia:write(User#user{channel_list = NewChannelList}) 
 	end,
     mnesia:transaction(F).
 
 update_list(#channel{id = _Id,users = UserList}, User)->
     [User | UserList].
+
+
+
+%% @doc	join_channel,This function links a user to a channel by using a channel %% name, a nick name and a user id (Socket)
+%% In the channel list, the nick is added and in the user's channel list, the name of the channel is added
 
 join_channel(ChannelName, Nick, Socket)->
     F = fun()->
@@ -143,6 +179,11 @@ extract_nick([H|T], Nick,Ack) ->
 	true ->
 	    extract_nick(T,Nick,[H|Ack])
     end.
+
+%%  @doc part_channel, 	This function removes a user from a channel by using A ChannelName to identify the channel A nickname to remove from it's nick-list
+%%  And finally, the socket of the user to remove the link (the channel has to be removed from the user's channel list) 
+
+
 
 part_channel(ChannelName, Nick, Socket)->
     F = fun() ->
@@ -179,6 +220,73 @@ get_head([])->
     [];
 get_head([H|_T])->
     H.
+
+test_all()->
+{test_passed,ok} = test_database(),
+{test_passed,ok} = test_nick(),
+{test_passed,ok} = test_channel().
+
+test_database()->
+
+	delete_table_db(user),
+	delete_table_db(channel),
+	stop(),
+	try traverse_table_and_show(user) of
+		E ->
+			exit({test_failed_node_running,E})
+	catch
+		exit:{aborted,{node_not_running,nonode@nohost}} -> ok
+	end,
+	start(),	
+	try traverse_table_and_show(user) of
+		_  ->
+			exit(test_failed_table_exist)
+	catch
+		exit: {aborted,{no_exists,user}} ->ok
+	end,
+	{atomic,ok} = create_db(),
+	{aborted,{already_exists,channel}}= create_db(),
+	[] = traverse_table_and_show(user),
+	{atomic,ok} = insert_user(123,kalle,stekare,servername,host,"Kalle Anka"),
+	{atomic,ok} = delete_table_db(user),
+	{atomic,ok} = delete_table_db(channel),
+	stop(),
+	{test_passed,ok}.
+
+test_nick()->
+	create_db(),
+	{atomic,ok} = insert_user(123,kalle,stekare,servername,host,"Kalle Anka"),
+	User = {user,123,kalle,stekare,servername,host,"Kalle Anka",[]},
+	User2 = {user,123,kalle,flygare,servername,host,"Kalle Anka",[]},
+	{atomic,[User]}  = check_socket(123),
+	{atomic,[User]}  = check_nick(stekare),
+	{atomic,ok} = update_nick(123, flygare),
+	{atomic,[User2]}  = check_socket(123),
+	{atomic,[User2]}  = check_nick(flygare),
+	delete_table_db(user),
+	delete_table_db(channel),
+	stop(),
+	{test_passed,ok}.
+
+
+test_channel()->
+	delete_table_db(user),
+	delete_table_db(channel),
+	create_db(),
+	insert_user(123,kalle,stekare,servername,host,"Kalle Anka"),
+	{atomic, ok} = insert_channel(computers, stekare,keyboards),
+	{_,[{_,computers,[stekare],keyboards}]} = check_channel(computers),
+	{atomic, ok} = part_channel(computers, stekare, 123),
+	{_,[{_,computers,[],keyboards}]} = check_channel(computers),
+	{test_passed,ok}.
+
+
+
+
+
+
+
+
 
 %% update_list_test()->
 %%    Channel = #channel{id="ost",users = [{[o,a], "mumin"}, {[r,a],"hemulen"}]},
