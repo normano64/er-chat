@@ -6,13 +6,15 @@ loop_user(Host,Socket) ->
     receive
         {user,[User,_Steps,_Star,RealName]} ->
             user(User,RealName,Host,Socket),
-            loop_user(Host,Socket);
+            %%loop_user(Host,Socket);
+            exit(normal);
         {nick_ok} ->
             receive
                 {user,[User,_Steps,_Star,RealName]} ->
                     user(User,RealName,Host,Socket,nick_ok)
             end,
-            loop_user(Host,Socket);
+            %%loop_user(Host,Socket);
+            exit(normal);
         Error ->
             io:format("Error user:~p~n",[Error])
     end.
@@ -30,8 +32,9 @@ loop_other(Host,Socket,UserPid) ->
         {quit,[Message]} ->
             quit(Message,Host,Socket),
             loop_other(Host,Socket,UserPid);
-        {join,[Channel]} ->
-            join(Channel,Host,Socket),
+        {join,[Channels]} ->
+            ChannelList = binary:split(Channels,<<",">>),
+            join(ChannelList,Host,Socket),
             loop_other(Host,Socket,UserPid);
         {privmsg,[Target,Message]} ->
             privmsg(Target,Message,Host,Socket),
@@ -39,9 +42,13 @@ loop_other(Host,Socket,UserPid) ->
         {part,[Target,Message]} ->
             part(Target,Message,Host,Socket),
             loop_other(Host,Socket,UserPid);
-        {part,[Target]} ->
-            part(Target,<<"">>,Host,Socket),
+        {part,[Channels]} ->
+            ChannelList = binary:split(Channels,<<",">>),
+            part(ChannelList,<<"">>,Host,Socket),
             loop_other(Host,Socket,UserPid);
+	{whois,Target} ->
+	    whois(Target, Host, Socket),
+	    loop_other(Host, Socket, UserPid);
         {unknown,Command} ->
             {_ServerIP,ServerHostent} = Host,
             gen_tcp:send(Socket,?REPLY_UNKNOWNCOMMAND),
@@ -88,20 +95,6 @@ user(User,RealName,{ServerIP,ServerHostent},Socket,nick_ok) ->
             gen_tcp:send(Socket,?REPLY_ALREADYREGISTERD)
     end.
 
-channel_change_nick([],_NewNick,UserList,_Socket) ->
-    UserList;
-channel_change_nick([H|T],NewNick,UserList,Socket) ->
-    {_,[{channel,_Channel,NickList,_Topic}]} = database:check_channel(H),
-    database:change_channel_nick(H,NewNick,Socket),
-    channel_change_nick(T,NewNick,lists:umerge(UserList,NickList),Socket).
-
-send_new_nick([],OldNick,NewNick,User,Hostent) ->
-    ok;
-send_new_nick([{_,SendToNick}|T],OldNick,Nick,User,Hostent) ->
-    {_,{user,Socket,_Users,_Nick,_Server,_Hostent,_RealName,_ChannelList}} = database:check_nick(SendToNick),
-    gen_tcp:send(Socket,?REPLY_UPDATENICK),
-    send_new_nick(T,OldNick,Nick,User,Hostent).
-
 nick(Nick,UserPid,{_ServerIP,ServerHostent},Socket) ->
     case database:check_nick(Nick) of
         {_,[]} ->
@@ -112,9 +105,9 @@ nick(Nick,UserPid,{_ServerIP,ServerHostent},Socket) ->
                     database:insert_user(Socket,empty,Nick,ServerHostent,list_to_binary(Hostent),empty),
                     UserPid ! {nick_ok};
                 {_,[{user,_,User,OldNick,_,Hostent,_,ChannelList}]} ->
-                    UserList = channel_change_nick(ChannelList,Nick,[],Socket),
+                    UserList = transmit:channel_change_nick(ChannelList,Nick,[],Socket),
                     NewUserList = lists:keydelete(OldNick,2,UserList),
-                    send_new_nick(NewUserList,OldNick,Nick,User,Hostent),
+                    transmit:send_new_nick(NewUserList,OldNick,Nick,User,Hostent),
                     database:update_nick(Socket,Nick),
                     gen_tcp:send(Socket,?REPLY_UPDATENICK)
             end;
@@ -139,32 +132,18 @@ quit(_Message,{_ServerIP,_ServerHostent},Socket) ->
             already_closed
     end.
 
-convert_nicklist([]) ->
-    <<"">>;
-convert_nicklist([{Status,Nick}|T]) ->
-    convert_nicklist(T,[Status,Nick]).
-convert_nicklist([],Ack) ->
-    list_to_binary(Ack);
-convert_nicklist([{Status,Nick}|T],Ack) ->
-    convert_nicklist(T,[Status,Nick,<<" ">>] ++ Ack).
-
-send_join_replies([],_Socket,_Channel) ->
+join([],{_ServerIP,_ServerHostent},_Socket) ->
     ok;
-send_join_replies([{_Status,NickDb}|T],Socket,Channel) ->
-    {_,[{user,_,User,Nick,_,Hostent,_,_}]} = database:check_socket(Socket),
-    {_,[{user,SocketToSendTo,_,_,_,_,_,_}]} = database:check_nick(NickDb),
-    gen_tcp:send(SocketToSendTo,?REPLY_JOINCHANNEL),
-    send_join_replies(T,Socket,Channel).
-
-join(Channel,{_ServerIP,ServerHostent},Socket) ->
+join([Channel|Tail],{ServerIP,ServerHostent},Socket) ->
     {_,[{user,_,User,Nick,_,Hostent,_,ChannelList}]} = database:check_socket(Socket),
     case database:check_channel(Channel) of
         {_,[{channel,_,Users,Topic}]} ->
             case lists:member(Channel,ChannelList) of
                 false ->
                     database:join_channel(Channel,{<<"">>,Nick},Socket),
-                    UserList = convert_nicklist(Users),
-                    send_join_replies(Users,Socket,Channel),
+                    UserList = transmit:convert_nicklist(Users),
+                    {_,[{user,_,User,Nick,_,Hostent,_,_}]} = database:check_socket(Socket),
+                    transmit:send_join_replies(Users,Channel,Nick,User,Hostent),
                     gen_tcp:send(Socket,?REPLY_JOINCHANNEL),
                     if
                         Topic == <<"">> ->
@@ -183,46 +162,56 @@ join(Channel,{_ServerIP,ServerHostent},Socket) ->
             gen_tcp:send(Socket,?REPLY_JOINCHANNEL),
             gen_tcp:send(Socket,?REPLY_JOINNAMREPLY),
             gen_tcp:send(Socket,?REPLY_ENDOFNAMES)
-    end.
-
-send_privmsg([],_Target,_Message,_Socket) ->
-    ok;
-send_privmsg([{_Status,NickDb}|T],Target,Message,Socket) ->
-    {_,[{user,_,User,Nick,_,Hostent,_,_}]} = database:check_socket(Socket),
-    {_,[{user,SocketToSendTo,_,_,_,_,_,_}]} = database:check_nick(NickDb),
-    if
-        NickDb =/= Nick ->
-            gen_tcp:send(SocketToSendTo,?REPLY_PRIVMSG);
-        true ->
-            []
     end,
-    send_privmsg(T,Target,Message,Socket).
+    join(Tail,{ServerIP,ServerHostent},Socket).
 
 privmsg(Target,Message,{_ServerIP,_ServerHostent},Socket) ->
-    case database:check_channel(Target) of
-        {_,[{channel,_,Users,_Topic}]} ->
-            send_privmsg(Users,Target,Message,Socket);
+    MessageCheck = binary:match(Target,<<"#">>),
+    case MessageCheck of
+        {0,1} ->
+            case database:check_channel(Target) of
+                {_,[{channel,_,Users,_Topic}]} ->
+                    {_,[{user,_,User,Nick,_,Hostent,_,_}]} = database:check_socket(Socket),
+                    transmit:send_privmsg(Users,Target,Message,Nick,User,Hostent);
+                _ ->
+                    []
+            end;
+        nomatch ->
+            case database:check_nick(Target) of
+                {_,[{user,TargetSocket,_UserTarget,Target,_,_HostentTarget,_,_ChannelList}]} ->
+                    {_,[{user,_,User,Nick,_,Hostent,_,_}]} = database:check_socket(Socket),
+                    gen_tcp:send(TargetSocket,?REPLY_PRIVMSG);
+                _ ->
+                    []
+            end;
         _ ->
             []
     end.
 
-send_part([],_Target,_Message,_Socket) ->
+part([],_Message,{_ServerIP,_ServerHostent},_Socket) ->
     ok;
-send_part([{_Status,NickDb}|T],Target,Message,Socket) ->
-    {_,[{user,_,User,Nick,_,Hostent,_,_}]} = database:check_socket(Socket),
-    {_,[{user,SocketToSendTo,_,_,_,_,_,_}]} = database:check_nick(NickDb),
-    gen_tcp:send(SocketToSendTo,?REPLY_PART),
-    send_part(T,Target,Message,Socket).
-
-part(Target,Message,{_ServerIP,_ServerHostent},Socket) ->
+part([Target|Tail],Message,{ServerIP,ServerHostent},Socket) ->
     {_,[{user,_,User,Nick,_,Hostent,_,ChannelList}]} = database:check_socket(Socket),
     case database:check_channel(Target) of
-        {_,[{channel,_,Users,Topic}]} ->
+        {_,[{channel,_,Users,_Topic}]} ->
             case lists:member(Target,ChannelList) of
                 true ->
-                    send_part(Users,Target,Message,Socket),
+                    transmit:send_part(Users,Target,Message,Nick,User,Hostent),
                     database:part_channel(Target,Nick,Socket);
                 false ->
                     []
             end
+    end,
+    part(Tail,Message,{ServerIP,ServerHostent},Socket).
+
+whois(Target, {_ServerIp, ServerHostent}, Socket)->
+    {_,[{user,_,_,Nick,_,_,_,_ChannelList}]} = database:check_socket(Socket),
+    case database:check_nick(Target) of
+	{_,[{user,_,_TargetUser,_,UserServer,UserHostent,TargetRealName,_ChannelList}]} ->
+	    gen_tcp:send(Socket,?REPLY_WHOISUSER), 
+	    gen_tcp:send(Socket,?REPLY_WHOISSERVER),
+	    gen_tcp:send(Socket,?REPLY_ENDOFWHOIS);
+	_ ->
+	    gen_tcp:send(Socket,?REPLY_NOSUCHNICK),
+	    gen_tcp:send(Socket,?REPLY_ENDOFWHOIS)
     end.

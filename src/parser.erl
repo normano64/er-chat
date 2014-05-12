@@ -41,6 +41,9 @@ loop(UserPid,OtherPid) ->
                 {_,<<"PART">>,List} ->
                     OtherPid ! {part,List},
                     loop(UserPid,OtherPid);
+                {_,<<"WHOIS">>,List} ->
+                    OtherPid ! {whois,List},
+                    loop(UserPid,OtherPid);
                 {_,Command,_} ->
                     OtherPid ! {unknown,Command},
                     loop(UserPid,OtherPid)
@@ -65,14 +68,30 @@ parse(Bitstring) ->
 %%Trims of the prefix.
     case Bitstring_noR of
         <<$:,Rest/binary>> ->
-            {Pos,_} = binary:match(Rest,<<?SPACE>>),
-            <<Prefix:Pos/binary,_Unused:1/binary,Bitstring_noPrefix/binary>> = Rest;
+            IsMatch1 = binary:match(Rest,<<?SPACE>>),
+	    if
+		IsMatch1 =:= nomatch ->
+		    Prefix = badprefix, %%Bad case, need to overlook design!
+		    Bitstring_noPrefix = <<>>;
+		true ->
+		    {Pos1,_} = IsMatch1,
+		    <<Prefix:Pos1/binary,_Unused1:1/binary,Bitstring_noPrefix/binary>> = Rest	    
+		end;
         _ ->
             Prefix = noprefix,
             Bitstring_noPrefix = Bitstring_noR
         end,
     %%Splits the Bitstring at the Colonpart if it exists.
-    [Bitstring_noColon|Colonpart] = binary:split(Bitstring_noPrefix,<<?SPACE,?COLON>>,[global]),
+    IsMatch2 = binary:match(Bitstring_noPrefix,<<?SPACE,?COLON>>),
+    if
+	IsMatch2 =:= nomatch ->
+	    Bitstring_noColon = Bitstring_noPrefix,
+	    Colonpart = [];
+	true ->
+	    {Pos2,_} = IsMatch2,
+	    <<Bitstring_noColon:Pos2/binary,_Unused2:2/binary,Colonbit/binary>> = Bitstring_noPrefix,
+	    Colonpart = [Colonbit]
+    end,
     %%Splits the rest at spaces.
     Bitlist = binary:split(Bitstring_noColon,<<?SPACE>>,[global]),
     %%Appends all the parts and return.
@@ -80,6 +99,7 @@ parse(Bitstring) ->
     [Command|Parameters] = Bitlist_complete,
     {Prefix,Command,Parameters}.
 
+%% [Bitstring_noColon|Colonpart] = binary:split(Bitstring_noPrefix,<<?SPACE,?COLON>>,[global]),
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

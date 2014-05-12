@@ -1,5 +1,4 @@
-%% @author Sam, Mattias, Ludwing, Per och Tomas
-%% @doc Database
+
 -module(database).
 -compile(export_all).
 -include_lib("eunit/include/eunit.hrl").
@@ -12,8 +11,13 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
-%% @doc The create_db starts the database nodes and creates two tables; user and channels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%		create_db
+%
+%  This function starts the database nodes and creates two tables; user and channel.
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 create_db()->
     ListNodes = [node()],
@@ -23,8 +27,14 @@ create_db()->
     mnesia:create_table(channel,[{attributes,record_info(fields,channel)},{disc_copies,ListNodes},{type,set}]).
 
 
-%% @doc traverse_table_and_show, This function simply traverse the desired table
-%% in the database and prints it in the shell
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%	traverse_table_and_show
+%
+% This function simply traverse the desired table in the database
+% and prints it in the shell. 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 traverse_table_and_show(Table_name)->
     Iterator =  fun(Rec,_)->
@@ -53,11 +63,13 @@ stop()->
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-
-%%  @doc insert_user, This function inserts a user in the Database.
-%%  It's parameters are the values of the columns in the table.
-%%  The user can then be then later be found with it's unique socket
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%     insert_user
+%
+% This function inserts a user in the database.
+% It's parameters are the values of the columns in the table 
+% The user can then be then later be found with it's unique socket
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 insert_user(Socket,User,Nick,Server,Hostent,Realname)->
@@ -121,11 +133,15 @@ delete_socket(Socket)->
 find_channellist({_,_,_,_,_,_,_,ChannelList})->
     ChannelList.
 
-
-
-%% @doc	insert_channel,	This function creates a channel where the id is the parameter ChannelName with only one user (specified as in the parameter Nick)
-%% The name of the topic is specified in the last parameter Topic 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%	insert_channel
+%
+%	This function creates a channel where the id is the parameter ChannelName with only one user (specified as in the parameter Nick)
+%	The name of the topic is specified in the last parameter Topic
+%
+%	
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 insert_channel(ChannelName, Nick, Topic) ->
     Data = #channel{id = ChannelName,users = [Nick], topic = Topic},
@@ -147,10 +163,12 @@ update_list(#channel{id = _Id,users = UserList}, User)->
     [User | UserList].
 
 
-
-%% @doc	join_channel,This function links a user to a channel by using a channel %% name, a nick name and a user id (Socket)
-%% In the channel list, the nick is added and in the user's channel list, the name of the channel is added
-
+%%%%%%%%%%%%%%%%%
+%	join_channel
+%
+%	This function links a user to a channel by using a channel name, a nick name and a user id (Socket)
+%	In the channel list, the nick is added and in the user's channel list, the name of the channel is added
+%%%%%%%%%%%%%%%%%%
 join_channel(ChannelName, Nick, Socket)->
     F = fun()->
 		[Channel]= mnesia:wread({channel,ChannelName}),
@@ -179,10 +197,16 @@ extract_nick([H|T], Nick,Ack) ->
 	true ->
 	    extract_nick(T,Nick,[H|Ack])
     end.
-
-%%  @doc part_channel, 	This function removes a user from a channel by using A ChannelName to identify the channel A nickname to remove from it's nick-list
-%%  And finally, the socket of the user to remove the link (the channel has to be removed from the user's channel list) 
-
+%%%%%%%%%%%%%%%%%%%%
+%	part_channel
+%	
+%	This function removes a user from a channel by using
+%   A ChannelName to identify the channel
+%	A nickname to remove from it's nick-list
+%	And finally, the socket of the user to remove the link (the channel has to be removed from the user's channel list)
+%	
+%
+%%%%%%%%%%%%%%%%%%
 
 
 part_channel(ChannelName, Nick, Socket)->

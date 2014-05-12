@@ -8,19 +8,25 @@
 % Command replies 200-399
 -define(RPL_AWAY,<<"301">>). % <nick> :<away message>
 
+%% Replies for whois
+-define(RPL_WHOISUSER,<<"311">>).
+-define(RPL_WHOISSERVER,<<"312">>).
+-define(RPL_WHOISACTUALLY,<<"338">>).
+-define(RPL_WHOISIDLE,<<"317">>).
+-define(RPL_ENDOFWHOIS,<<"318">>).
+
+%% Topic replies
 -define(RPL_NOTOPIC,<<"331">>). % <channel> :No topic is set
 -define(RPL_TOPIC,<<"332">>). % <channel> :<topic>
 
+%% Channel replies
 -define(RPL_NAMREPLY,<<"353">>). % ( "=" / "*" / "@" ) <channel> :[ "@" / "+" ] <nick> *( " " [ "@" / "+" ] <nick> )
 -define(RPL_ENDOFNAMES,<<"366">>). %<channel> :End of NAMES list
+
 % Error replies 400-599
--define(ERR_NOSUCHNICK,<<"401">>). % <nickname> :No such nick/channel
--define(ERR_NOSUCHSERVER,<<"402">>). % <server name> :No such server"
-
+-define(ERR_NOSUCHNICK,<<"401">>). % <nickname> :No such nick/channel-define(ERR_NOSUCHSERVER,<<"402">>). % <server name> :No such server"
 -define(ERR_UNKNOWNCOMMAND,<<"421">>). %% <command> :Unknown command
-
 -define(ERR_NICKNAMEINUSE,<<"433">>). % <nick> :Nickname is already in use
-
 -define(ERR_ALREADYREGISTRED,<<"462">>). % <nick> :Nickname is already in use
 
 
@@ -48,3 +54,17 @@
 -define(REPLY_ENDOFNAMES,[<<":">>,ServerHostent,<<" ">>,?RPL_ENDOFNAMES,<<" ">>,Nick,<<" ">>,Channel,<<" :End of NAMES list\r\n">>]).
 -define(REPLY_PRIVMSG,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" PRIVMSG ">>,Target,<<" :">>,Message,<<"\r\n">>]).
 -define(REPLY_PART,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" PART ">>,Target,<<" :">>,Message,<<"\r\n">>]).
+
+%% Who is macros
+-define(REPLY_NOSUCHNICK,[<<":">>,ServerHostent,<<" ">>,?ERR_NOSUCHNICK,<<" ">>, Target, <<" :No such nick/channel\r\n">>]). 
+-define(REPLY_ENDOFWHOIS,[<<":">>,ServerHostent,<<" ">>,?RPL_ENDOFWHOIS,<<" ">>,Nick,<<" ">>, Target, <<" :End of /WHOIS list\r\n">>]). 
+%%RPL_WHOISUSER
+-define(REPLY_WHOISUSER,[<<":">>,ServerHostent,<<" ">>,?RPL_WHOISUSER,<<" ">>,Nick,<<" ">>,Target,<<" ">> ,UserHostent,<<" * :">>,TargetRealName,<<"\r\n">>]).
+-define(REPLY_WHOISSERVER,[<<":">>,ServerHostent,<<" ">>,?RPL_WHOISSERVER,<<" ">>,Nick,<<" ">>,Target,<<" ">>,UserServer,<<" :hardcoded server name\r\n">>]).
+%% -define().
+
+%% :efnet.portlane.se 311 jajaja jajaja ~mattiasli nl119-199-61.student.uu.se * :realname
+%% :efnet.portlane.se 312 jajaja jajaja efnet.portlane.se :Portlane EFnet Server (IPv4, IPv6 & SSL)
+%% :efnet.portlane.se 338 jajaja jajaja 130.243.199.61 :actually using host
+%% :efnet.portlane.se 317 jajaja jajaja 12 1399632873 :seconds idle, signon time
+%% :efnet.portlane.se 318 jajaja jajaja :End of /WHOIS list.
