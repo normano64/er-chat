@@ -143,17 +143,13 @@ find_channellist({_,_,_,_,_,_,_,ChannelList})->
 %	
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-insert_channel(ChannelName, Nick, Topic) ->
-    Data = #channel{id = ChannelName,users = [Nick], topic = Topic},
+insert_channel(ChannelName, {Status,Nick}, Topic) ->
+    Data = #channel{id = ChannelName,users = [{Status,Nick}], topic = Topic},
     F = fun()->
 		mnesia:write(Data),
+                {_,[{_,Socket, _User, _Nick, _Server, _Hostent, _RealName, ChannelList}]} = check_nick(Nick),
 
-		%Below is the original code
-		%{_,[{_,Socket, _User, _Nick, _Server, _Hostent, _RealName, ChannelList}]} = check_nick(Nick),
-
-		%Below is not the original code, it is a working version
-		{_,[{_,Socket,_User,_Nick,_Server,_Hostent,_RealName,ChannelList}|_]}= check_nick(Nick), %We need to find the Socket of the nick 
-		[User] = mnesia:wread({user, Socket}), %here we extract the user from the table user
+		[User] = mnesia:wread({user, Socket}),
 		NewChannelList = [ChannelName | ChannelList],
 		mnesia:write(User#user{channel_list = NewChannelList}) 
 	end,
