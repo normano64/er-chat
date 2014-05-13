@@ -39,8 +39,9 @@ loop_other(Host,Socket,UserPid) ->
         {privmsg,[Target,Message]} ->
             privmsg(Target,Message,Host,Socket),
             loop_other(Host,Socket,UserPid);
-        {part,[Target,Message]} ->
-            part(Target,Message,Host,Socket),
+        {part,[Channels,Message]} ->
+            ChannelList = binary:split(Channels,<<",">>),
+            part(ChannelList,Message,Host,Socket),
             loop_other(Host,Socket,UserPid);
         {part,[Channels]} ->
             ChannelList = binary:split(Channels,<<",">>),
@@ -49,6 +50,14 @@ loop_other(Host,Socket,UserPid) ->
 	{whois,Target} ->
 	    whois(Target, Host, Socket),
 	    loop_other(Host, Socket, UserPid);
+        {topic,[Channels]} ->
+            ChannelList = binary:split(Channels,<<",">>),
+	    get_topic(ChannelList, Host, Socket),
+	    loop_other(Host, Socket, UserPid);
+        {topic,[Channels|Topic]} ->
+           ChannelList = binary:split(Channels,<<",">>),
+	   set_topic(ChannelList, Topic, Host, Socket),
+	   loop_other(Host, Socket, UserPid);
         {unknown,Command} ->
             {_ServerIP,ServerHostent} = Host,
             gen_tcp:send(Socket,?REPLY_UNKNOWNCOMMAND),
@@ -205,7 +214,7 @@ part([Target|Tail],Message,{ServerIP,ServerHostent},Socket) ->
     end,
     part(Tail,Message,{ServerIP,ServerHostent},Socket).
 
-whois(TargetList, {_ServerIp, ServerHostent}, Socket)->
+whois(TargetList,{_ServerIp, ServerHostent},Socket) ->
     Target = lists:nth(1,TargetList),
     io:format("WHOIS::: ~p~n",[Target]),
     {_,[{user,_,_,Nick,_,_,_,_ChannelList}]} = database:check_socket(Socket),
@@ -218,3 +227,40 @@ whois(TargetList, {_ServerIp, ServerHostent}, Socket)->
 	    gen_tcp:send(Socket,?REPLY_NOSUCHNICK),
 	    gen_tcp:send(Socket,?REPLY_ENDOFWHOIS)
     end.
+
+get_topic([],_Host,_Socket) ->
+    ok;
+get_topic([Channel|Tail],{_ServerIp, ServerHostent},Socket) ->
+    {_,[{user,_,_User,Nick,_,_Hostent,_,ChannelList}]} = database:check_socket(Socket),
+    case lists:member(Channel,ChannelList) of
+        true ->
+            {_,[{channel,Channel,_Users,Topic}]} = database:check_channel(Channel),
+            case Topic of
+                <<"">> ->
+                    gen_tcp:send(Socket,?REPLY_JOINTOPIC);
+                _ ->
+                    gen_tcp:send(Socket,?REPLY_JOINNOTOPIC)
+            end;
+        false ->
+            gen_tcp:send(Socket,?REPLY_NOTINCHANNEL)
+    end,
+    get_topic(Tail,{_ServerIp, ServerHostent},Socket).
+
+set_topic([],Topic,_Host,_Socket) ->
+    ok;
+set_topic([Channel|Tail],Topic,{_ServerIp, ServerHostent},Socket) ->
+    {_,[{user,_,User,Nick,_,Hostent,_,ChannelList}]} = database:check_socket(Socket),
+    case lists:member(Channel,ChannelList) of
+        true ->
+            {_,[{channel,Channel,Users,Topic}]} = database:check_channel(Channel),
+            case lists:keysearch(User,2,Users) of
+                <<"@">> ->
+                    database:set_topic(Channel,Topic),
+                    transmit:send_new_topic(Users,Channel,Topic,Nick,User,Hostent);
+                _ ->
+                    gen_tcp:send(Socket,?REPLY_NOTCHANOP)
+            end;
+        false ->
+            gen_tcp:send(Socket,?REPLY_NOTINCHANNEL)
+    end,
+    set_topic(Tail,Topic,{_ServerIp, ServerHostent},Socket).
