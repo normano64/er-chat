@@ -206,12 +206,17 @@ part_channel(ChannelName, Nick, Socket)->
 		
 		{_, [{_, _Name, NickList, _Topic}]} = check_channel(ChannelName),
 		NewNickList = lists:keydelete(Nick,2,NickList),
-		{_,[{_,_,_,_,_,_,_,ChannelList}]} = check_socket(Socket),
-		NewChannelList = lists:delete(ChannelName,ChannelList),
+		if 
+		    NewNickList == [] ->
+			delete_channel(ChannelName);
+		    true ->
+			{_,[{_,_,_,_,_,_,_,ChannelList}]} = check_socket(Socket),
+			NewChannelList = lists:delete(ChannelName,ChannelList),
 
-		mnesia:write(Channel#channel{users=NewNickList}),
-		mnesia:write(User#user{channel_list=NewChannelList})
-	end,
+			mnesia:write(Channel#channel{users=NewNickList}),
+			mnesia:write(User#user{channel_list=NewChannelList})
+		end
+	   end,
     mnesia:transaction(F).
 
 change_channel_nick(ChannelName,NewNick,Socket)->
