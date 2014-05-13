@@ -162,6 +162,14 @@ join_channel(ChannelName, Nick, Socket)->
 		
 	end,
     mnesia:transaction(F).
+
+set_topic(ChannelName, Topic)->
+    F = fun()->
+		[Channel]= mnesia:wread({channel,ChannelName}),
+		mnesia:write(Channel#channel{topic = Topic})
+	end,
+    mnesia:transaction(F).
+
 check_channel(ChannelName)->
     F = fun()->
 		mnesia:read({channel,ChannelName})
