@@ -27,7 +27,9 @@
 -define(ERR_NOSUCHNICK,<<"401">>). % <nickname> :No such nick/channel-define(ERR_NOSUCHSERVER,<<"402">>). % <server name> :No such server"
 -define(ERR_UNKNOWNCOMMAND,<<"421">>). %% <command> :Unknown command
 -define(ERR_NICKNAMEINUSE,<<"433">>). % <nick> :Nickname is already in use
+-define(ERR_NOTONCHANNEL,<<"442">>). %% <channel> :You're not on that channel
 -define(ERR_ALREADYREGISTRED,<<"462">>). % <nick> :Nickname is already in use
+-define(ERR_CHANOPRIVSNEEDED,<<"482">>). %% <channel> :You're not channel operator
 
 
 
@@ -61,6 +63,9 @@
 %%RPL_WHOISUSER
 -define(REPLY_WHOISUSER,[<<":">>,ServerHostent,<<" ">>,?RPL_WHOISUSER,<<" ">>,Nick,<<" ">>,Target,<<" ">> ,UserHostent,<<" * :">>,TargetRealName,<<"\r\n">>]).
 -define(REPLY_WHOISSERVER,[<<":">>,ServerHostent,<<" ">>,?RPL_WHOISSERVER,<<" ">>,Nick,<<" ">>,Target,<<" ">>,UserServer,<<" :hardcoded server name\r\n">>]).
+-define(REPLY_NOTINCHANNEL,[<<":">>,ServerHostent,<<" ">>,?ERR_NOTONCHANNEL,<<" ">>,Nick,<<" ">>,Channel,<<" :You're not on that channel\r\n">>]).
+-define(REPLY_NOTCHANOP,[<<":">>,ServerHostent,<<" ">>,?ERR_CHANOPRIVSNEEDED,<<" ">>,Nick,<<" ">>,Channel,<<" :You're not channel operator\r\n">>]).
+-define(REPLY_NEWTOPIC,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" TOPIC ">>,Channel,<<" :">>,Topic,<<"\r\n">>]).
 %% -define().
 
 %% :efnet.portlane.se 311 jajaja jajaja ~mattiasli nl119-199-61.student.uu.se * :realname
