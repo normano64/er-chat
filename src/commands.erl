@@ -46,7 +46,7 @@ loop_other(Host,Socket,UserPid) ->
             ChannelList = binary:split(Channels,<<",">>),
             part(ChannelList,<<"">>,Host,Socket),
             loop_other(Host,Socket,UserPid);
-	{whois,Target} ->
+	{whois,[Target,_Tail]} ->
 	    whois(Target, Host, Socket),
 	    loop_other(Host, Socket, UserPid);
         {unknown,Command} ->
@@ -205,6 +205,7 @@ part([Target|Tail],Message,{ServerIP,ServerHostent},Socket) ->
     part(Tail,Message,{ServerIP,ServerHostent},Socket).
 
 whois(Target, {_ServerIp, ServerHostent}, Socket)->
+    io:format("WHOIS::: ~p~n",[Target]),
     {_,[{user,_,_,Nick,_,_,_,_ChannelList}]} = database:check_socket(Socket),
     case database:check_nick(Target) of
 	{_,[{user,_,_TargetUser,_,UserServer,UserHostent,TargetRealName,_ChannelList}]} ->

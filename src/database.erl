@@ -309,19 +309,3 @@ test_channel()->
 
 
 
-
-
-
-%% update_list_test()->
-%%    Channel = #channel{id="ost",users = [{[o,a], "mumin"}, {[r,a],"hemulen"}]},
-%%    TestList = update_list(Channel,{[o],"korv"}),
-%%    {[H|_T],Name} = get_head(TestList),
-%%    [?assertEqual(H,o),
-%%    ?assertEqual(Name,"korv")
-%%    ].
-
-%% database_test()->
-%%    create_db([node()]),
-%%    insert_user("Perkson",12321,"servername"),
-%%    {_,User} = query_database("Perkson"),
-%%    ?assertEqual(User,[{user,"Perkson","pettsson",["socker","salt"],12321,"servername"}]).
