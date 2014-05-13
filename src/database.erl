@@ -129,7 +129,11 @@ find_channellist({_,_,_,_,_,_,_,ChannelList})->
 
 %% @doc	insert_channel,This function creates a channel where the id is the parameter ChannelName with only one user (specified as in the parameter Nick)
 %% The name of the topic is specified in the last parameter Topic
-
+delete_channel(Channel)->
+    F = fun()->
+		mnesia:delete({channel,Channel})
+	end,
+    mnesia:transaction(F).
 
 insert_channel(ChannelName, {Status,Nick}, Topic) ->
     Data = #channel{id = ChannelName,users = [{Status,Nick}], topic = Topic},
