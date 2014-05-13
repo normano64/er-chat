@@ -71,7 +71,7 @@ parse(Bitstring) ->
             IsMatch1 = binary:match(Rest,<<?SPACE>>),
 	    if
 		IsMatch1 =:= nomatch ->
-		    Prefix = badprefix, %%Bad case, need to overlook design!
+		    Prefix = badprefix, %%Need to overlook design?
 		    Bitstring_noPrefix = <<>>;
 		true ->
 		    {Pos1,_} = IsMatch1,
@@ -111,7 +111,7 @@ parse(Bitstring) ->
 parser_test() ->
     Bin1 = <<72,?SLASHR,69,?SLASHR,76,?SLASHR,76,?SLASHR,79>>,
     Bin2 = <<72,?SPACE,69,?SPACE,76,?SPACE,76,?SPACE,79>>,
-    Bin3 = <<?SLASHR,72,69,?SLASHR,?SPACE,76,76,?SLASHR,79,?SPACE>>,
+    Bin3 = <<?SLASHR,72,69,?SLASHR,?SPACE,76,76,?SPACE,79,?SPACE>>,
     Bin4 = <<"USER guest 0 * :Ronald Mcdonald">>,
     Bin5 = <<"USER guest 0 *:Ronald Mcdonald">>,
     Bin6 = <<":Prefix USER guest 0 * :Ronald Mcdonald">>,
