@@ -52,9 +52,9 @@ send_part([{_Status,NickDb}|T],Target,Message,Nick,User,Hostent) ->
     gen_tcp:send(SocketToSendTo,?REPLY_PART),
     send_part(T,Target,Message,Nick,User,Hostent).
 
-send_new_topic([],Channel,Topic,Nick,User,Hostent)) ->
+send_new_topic([],_Channel,_Topic,_Nick,_User,_Hostent) ->
     ok;
-send_new_topic([SendUser|Tail],Channel,Topic,Nick,User,Hostent) ->
+send_new_topic([{_Status,NickDb}|Tail],Channel,Topic,Nick,User,Hostent) ->
     {_,[{user,SocketToSendTo,_,_,_,_,_,_}]} = database:check_nick(NickDb),
     gen_tcp:send(SocketToSendTo,?REPLY_NEWTOPIC),
     send_new_topic(Tail,Channel,Topic,Nick,User,Hostent).

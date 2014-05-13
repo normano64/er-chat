@@ -246,18 +246,19 @@ get_topic([Channel|Tail],{_ServerIp, ServerHostent},Socket) ->
     end,
     get_topic(Tail,{_ServerIp, ServerHostent},Socket).
 
-set_topic([],Topic,_Host,_Socket) ->
+set_topic([],_Topic,_Host,_Socket) ->
     ok;
 set_topic([Channel|Tail],Topic,{_ServerIp, ServerHostent},Socket) ->
     {_,[{user,_,User,Nick,_,Hostent,_,ChannelList}]} = database:check_socket(Socket),
     case lists:member(Channel,ChannelList) of
         true ->
-            {_,[{channel,Channel,Users,Topic}]} = database:check_channel(Channel),
-            case lists:keysearch(User,2,Users) of
-                <<"@">> ->
+            {_,[{channel,Channel,NickList,_OldTopic}]} = database:check_channel(Channel),
+            case lists:keysearch(Nick,2,NickList) of
+                {_,{<<"@">>,Nick}} ->
                     database:set_topic(Channel,Topic),
-                    transmit:send_new_topic(Users,Channel,Topic,Nick,User,Hostent);
+                    transmit:send_new_topic(NickList,Channel,Topic,Nick,User,Hostent);
                 _ ->
+                    io:format("~p~n",[lists:keysearch(Nick,2,NickList)]),
                     gen_tcp:send(Socket,?REPLY_NOTCHANOP)
             end;
         false ->
