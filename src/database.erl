@@ -201,7 +201,7 @@ part_channel(ChannelName, Nick, Socket)->
 		[User] = mnesia:wread({user,Socket}),
 		
 		{_, [{_, _Name, NickList, _Topic}]} = check_channel(ChannelName),
-		NewNickList = lists:delete(Nick,NickList),
+		NewNickList = lists:keydelete(Nick,2,NickList),
 		{_,[{_,_,_,_,_,_,_,ChannelList}]} = check_socket(Socket),
 		NewChannelList = lists:delete(ChannelName,ChannelList),
 
