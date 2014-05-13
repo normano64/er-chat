@@ -123,9 +123,10 @@ pong({_ServerIP,ServerHostent},_Server,Socket) ->
     gen_tcp:send(Socket,?REPLY_PONG).
 
 
-quit(_Message,{_ServerIP,_ServerHostent},Socket) ->
+quit(Message,{_ServerIP,_ServerHostent},Socket) ->
     case database:check_socket(Socket) of
-        {_,[{user,_,User,Nick,_,Hostent,_,_}]} ->
+        {_,[{user,_,User,Nick,_,Hostent,_,Channels}]} ->
+            part(Channels,Message,{_ServerIP,_ServerHostent},Socket),
             gen_tcp:send(Socket,?REPLY_QUIT),
             database:delete_socket(Socket);
         {_,[]} ->
@@ -204,7 +205,9 @@ part([Target|Tail],Message,{ServerIP,ServerHostent},Socket) ->
     end,
     part(Tail,Message,{ServerIP,ServerHostent},Socket).
 
-whois(Target, {_ServerIp, ServerHostent}, Socket)->
+whois(TargetList, {_ServerIp, ServerHostent}, Socket)->
+    Target = lists:nth(1,TargetList),
+    io:format("WHOIS::: ~p~n",[Target]),
     {_,[{user,_,_,Nick,_,_,_,_ChannelList}]} = database:check_socket(Socket),
     case database:check_nick(Target) of
 	{_,[{user,_,_TargetUser,_,UserServer,UserHostent,TargetRealName,_ChannelList}]} ->
