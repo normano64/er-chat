@@ -1,4 +1,4 @@
-%% @author Sam, Mattias, Ludwing, Per och Tomas
+%% @author Sam, Mattias,Ludwing, Per och Tomas
 %% @doc Database
 -module(database).
 -compile(export_all).
@@ -240,11 +240,6 @@ get_head([])->
 get_head([H|_T])->
     H.
 
-test_all()->
-?assertMatch({test_passed,ok} , test_database()),
-?assertMatch({test_passed,ok} , test_nick()),
-?assertMatch({test_passed,ok} , test_channel()),
-{all_test_passed,ok}.
 
 reset()->
 	create_db(),
@@ -252,8 +247,8 @@ reset()->
 	delete_table_db(channel),
 	stop().
 
-test_database()->
-	reset(),
+database_functions_test()->
+	[reset(),
 	?assertExit({aborted,{node_not_running,nonode@nohost}},traverse_table_and_show(user)),
 	start(),	
 	?assertExit({aborted,{no_exists,user}},traverse_table_and_show(user)),
@@ -267,35 +262,31 @@ test_database()->
 	?assertMatch({atomic,ok} , insert_user(123,kalle,stekare,servername,host,"Kalle Anka")),
 	?assertMatch({atomic,ok} , delete_table_db(user)),
 	?assertMatch({atomic,ok} , delete_table_db(channel)),
-	stop(),
-	{test_passed,ok}.
+	stop(),{test_passed,ok}].
 
-test_nick()->
-	reset(),
+nick_test()->
+	[reset(),
 	create_db(),
 	?assertMatch({atomic,ok}, insert_user(123,kalle,stekare,servername,host,"Kalle Anka")),
-	User = {user,123,kalle,stekare,servername,host,"Kalle Anka",[]},
-	User2 = {user,123,kalle,flygare,servername,host,"Kalle Anka",[]},
-	?assertMatch({atomic,[User]}  , check_socket(123)),
-	?assertMatch({atomic,[User]}  , check_nick(stekare)),
+	
+	?assertMatch({atomic,[{user,123,kalle,stekare,servername,host,"Kalle Anka",[]}]}  , check_socket(123)),
+	?assertMatch({atomic,[{user,123,kalle,stekare,servername,host,"Kalle Anka",[]}]}  , check_nick(stekare)),
 	?assertMatch({atomic,ok} , update_nick(123, flygare)),
-	?assertMatch({atomic,[User2]}  , check_socket(123)),
-	?assertMatch({atomic,[User2]}  , check_nick(flygare)),
+	?assertMatch({atomic,[{user,123,kalle,flygare,servername,host,"Kalle Anka",[]}]}  , check_socket(123)),
+	?assertMatch({atomic,[{user,123,kalle,flygare,servername,host,"Kalle Anka",[]}]}  , check_nick(flygare)),
 	delete_table_db(user),
 	delete_table_db(channel),
-	stop(),
-	{test_passed,ok}.
+	stop(),{test_passed,ok}].
 
 
-test_channel()->
-	reset(),
+channel_test()->
+	[reset(),
 	create_db(),
 	insert_user(123,kalle,stekare,servername,host,"Kalle Anka"),
-	?assertMatch({atomic, ok} , insert_channel(computers, stekare,keyboards)),
-	?assertMatch({_,[{_,computers,[stekare],keyboards}]} , check_channel(computers)),
-	?assertMatch({atomic, ok} , part_channel(computers, stekare, 123)),
-	?assertMatch({_,[{_,computers,[],keyboards}]} , check_channel(computers)),
-	{test_passed,ok}.
+	?assertMatch({atomic, ok} , insert_channel(computers, {online,stekare},keyboards)),
+	?assertMatch({_,[{_,computers,[{online,stekare}],keyboards}]} , check_channel(computers)),
+	?assertMatch({atomic,{atomic, ok}}, part_channel(computers, stekare, 123)),
+	?assertMatch({atomic,[]} , check_channel(computers)),{test_passed,ok}].
 
 
 
