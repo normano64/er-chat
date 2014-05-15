@@ -47,6 +47,9 @@ loop(UserPid,OtherPid) ->
                 {_,<<"TOPIC">>,List} ->
                     OtherPid ! {topic,List},
                     loop(UserPid,OtherPid);
+		{_,<<"INVITE">>,List} ->
+		    OtherPid ! {invite, List},
+		    loop(UserPid, OtherPid);
                 {_,Command,_} ->
                     OtherPid ! {unknown,Command},
                     loop(UserPid,OtherPid)

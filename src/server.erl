@@ -15,11 +15,20 @@ acceptor(ListenSocket) ->
     spawn(fun() -> acceptor(ListenSocket) end),
     io:format("~p connected~n", [Socket]),
     
+    %% PRE ERLANG VERSION 16
+    %%{ok,List} = inet:getif(),
+    %%{ServerIP,_,_} = lists:nth(1, List),
+    %%{ok,{hostent,ServerHostent,_,_,_,_}} = inet:gethostbyaddr(ServerIP),
+    %%Host = {list_to_binary(inet:ntoa(ServerIP)),list_to_binary(ServerHostent)},
+    
+    %% ERLANG VERSION 17
     {ok,List} = inet:getif(),
-    {ServerIP,_,_} = lists:nth(1, List),
+    {ServerIP,_,_} = lists:nth(2, List),
     {ok,{hostent,ServerHostent,_,_,_,_}} = inet:gethostbyaddr(ServerIP),
     Host = {list_to_binary(inet:ntoa(ServerIP)),list_to_binary(ServerHostent)},
-    
+
+    io:format("BAJJSS~n"),
+
     UserPid = spawn_link(fun()-> commands:loop_user(Host,Socket) end),
     OtherPid = spawn_link(fun()-> commands:loop_other(Host,Socket, UserPid) end),
     ParserPid = spawn_link(fun()-> parser:loop(UserPid,OtherPid) end),

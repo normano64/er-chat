@@ -31,7 +31,7 @@
 -define(ERR_ALREADYREGISTRED,<<"462">>). % <nick> :Nickname is already in use
 -define(ERR_CHANOPRIVSNEEDED,<<"482">>). %% <channel> :You're not channel operator
 
-
+-define(RPL_INVITING,<<"341">>).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                                                                                     %%
@@ -57,16 +57,17 @@
 -define(REPLY_PRIVMSG,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" PRIVMSG ">>,Target,<<" :">>,Message,<<"\r\n">>]).
 -define(REPLY_PART,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" PART ">>,Target,<<" :">>,Message,<<"\r\n">>]).
 
-%% Who is macros
 -define(REPLY_NOSUCHNICK,[<<":">>,ServerHostent,<<" ">>,?ERR_NOSUCHNICK,<<" ">>, Target, <<" :No such nick/channel\r\n">>]). 
 -define(REPLY_ENDOFWHOIS,[<<":">>,ServerHostent,<<" ">>,?RPL_ENDOFWHOIS,<<" ">>,Nick,<<" ">>, Target, <<" :End of /WHOIS list\r\n">>]). 
-%%RPL_WHOISUSER
 -define(REPLY_WHOISUSER,[<<":">>,ServerHostent,<<" ">>,?RPL_WHOISUSER,<<" ">>,Nick,<<" ">>,Target,<<" ">> ,UserHostent,<<" * :">>,TargetRealName,<<"\r\n">>]).
 -define(REPLY_WHOISSERVER,[<<":">>,ServerHostent,<<" ">>,?RPL_WHOISSERVER,<<" ">>,Nick,<<" ">>,Target,<<" ">>,UserServer,<<" :hardcoded server name\r\n">>]).
 -define(REPLY_NOTINCHANNEL,[<<":">>,ServerHostent,<<" ">>,?ERR_NOTONCHANNEL,<<" ">>,Nick,<<" ">>,Channel,<<" :You're not on that channel\r\n">>]).
 -define(REPLY_NOTCHANOP,[<<":">>,ServerHostent,<<" ">>,?ERR_CHANOPRIVSNEEDED,<<" ">>,Nick,<<" ">>,Channel,<<" :You're not channel operator\r\n">>]).
 -define(REPLY_NEWTOPIC,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" TOPIC ">>,Channel,<<" :">>,Topic,<<"\r\n">>]).
-%% -define().
+
+%%not implemented macros
+%%-define(REPLY_INVITE,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent <<" INVITE ">>, Target,<<" ">>, Channel]).
+-define(REPLY_INVITING,[<<":">>,ServerHostent,<<" ">>,?RPL_INVITING,<<" ">>, <<" INVITE ">>, Target,<<" ">>, Channel]).
 
 %% :efnet.portlane.se 311 jajaja jajaja ~mattiasli nl119-199-61.student.uu.se * :realname
 %% :efnet.portlane.se 312 jajaja jajaja efnet.portlane.se :Portlane EFnet Server (IPv4, IPv6 & SSL)

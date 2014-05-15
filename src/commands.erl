@@ -58,6 +58,9 @@ loop_other(Host,Socket,UserPid) ->
            ChannelList = binary:split(Channels,<<",">>),
 	   set_topic(ChannelList, Topic, Host, Socket),
 	   loop_other(Host, Socket, UserPid);
+	{invite, [TargetNick, TargetChannel]} ->
+	    invite(Host,Socket,TargetNick, TargetChannel),
+	    loop_other(Host, Socket, UserPid);
         {unknown,Command} ->
             {_ServerIP,ServerHostent} = Host,
             gen_tcp:send(Socket,?REPLY_UNKNOWNCOMMAND),
@@ -265,3 +268,18 @@ set_topic([Channel|Tail],Topic,{_ServerIp, ServerHostent},Socket) ->
             gen_tcp:send(Socket,?REPLY_NOTINCHANNEL)
     end,
     set_topic(Tail,Topic,{_ServerIp, ServerHostent},Socket).
+
+invite({_ServerIp,ServerHostent}, Socket, Target, Channel)->
+    case database:check_channel(Channel) of 
+	{_,[]} ->
+	    gen_tcp:send(Socket, ?REPLY_NOSUCHNICK);
+	{_,[{channel, Channel, NickList,_}]} ->
+	    case lists:member(Target,NickList) of
+		false ->
+		    gen_tcp:send(Socket, ?REPLY_NOSUCHNICK);
+		true ->
+		    gen_tcp:send(Socket, ?REPLY_INVITING),
+		    io:format("TARGETNICK2 we have nick and channel ~p ~p~n",[Target, Channel]),
+		    ok
+	    end
+    end.
