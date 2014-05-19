@@ -2,12 +2,18 @@
 -compile(export_all).
 -include("rpl_macro.hrl").
 
+extract_nick([],Ack)->
+    Ack;
+extract_nick([{_Status,Nick}|T],Ack) ->
+    extract_nick(T,Ack ++ Nick).
+    
 channel_change_nick([],_NewNick,UserList,_Socket) ->
     UserList;
 channel_change_nick([H|T],NewNick,UserList,Socket) ->
     {_,[{channel,_Channel,NickList,_Topic}]} = database:check_channel(H),
+    NewNickList = extract_nick(NickList,[]),
     database:change_channel_nick(H,NewNick,Socket),
-    channel_change_nick(T,NewNick,lists:umerge(UserList,NickList),Socket).
+    channel_change_nick(T,NewNick,lists:umerge(UserList,NewNickList),Socket).
 
 send_new_nick([],_OldNick,_NewNick,_User,_Hostent) ->
     ok;
@@ -58,3 +64,10 @@ send_new_topic([{_Status,NickDb}|Tail],Channel,Topic,Nick,User,Hostent) ->
     {_,[{user,SocketToSendTo,_,_,_,_,_,_}]} = database:check_nick(NickDb),
     gen_tcp:send(SocketToSendTo,?REPLY_NEWTOPIC),
     send_new_topic(Tail,Channel,Topic,Nick,User,Hostent).
+
+send_kick([],_Nick,_User,_Hostent,_Target,_TargetChannel)->
+    ok;
+send_kick([{_Status,NickDb}|Tail],Nick,User,Hostent,Target,TargetChannel)->
+    {_,[{user,SocketToSendTo,_,_,_,_,_,_}]} = database:check_nick(NickDb),
+    gen_tcp:send(SocketToSendTo,?REPLY_KICK), 
+    send_kick(Tail,Nick,User,Hostent,Target,TargetChannel).

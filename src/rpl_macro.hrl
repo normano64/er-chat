@@ -1,3 +1,5 @@
+-define(USER_PREFIX,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" ">>]).
+-define(SERVER_PREFIX,[<<":">>,ServerHostent,<<" ">>]).
 % Connection replies 001-009
 -define(RPL_WELCOME,<<"001">>). % Welcome to the Internet Relay Network <nick>!<user>@<host>
 -define(RPL_YOURHOST,<<"002">>). % Your host is <servername>,running version <ver>
@@ -33,6 +35,8 @@
 -define(ERR_USERONCHANNEL,<<"443">>).
 -define(RPL_INVITING,<<"341">>).
 -define(RPL_INVITED,<<"345">>).
+-define(ERR_NOTONCHANNEL,<<"442">>).
+-define(ERR_USERNOTINCHANNEL,<<"441">>).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                                                                                     %%
 %%                                                                                     %%
@@ -66,10 +70,14 @@
 -define(REPLY_NEWTOPIC,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" TOPIC ">>,Channel,<<" :">>,Topic,<<"\r\n">>]).
 
 %%for invite
--define(REPLY_INVITING,[<<":">>,Nick,<<"!">>,User,<<"@">>,ServerHostent,<<" ">>,?RPL_INVITING, <<" INVITE ">>, Target,<<" ">>, Channel]).
+-define(REPLY_INVITING,[?USER_PREFIX,<<"INVITE ">>, Target,<<" ">>, Channel,<<"\r\n">>]).
 
 %%-define(REPLY_INVITED,[<<":">>,ServerHostent,<<" ">>,?RPL_INVITING,<<" ">>, <<" INVITE ">>, Target,<<" ">>, Channel]).
--define(REPLY_USERONCHANNEL,[<<":">>,ServerHostent,<<" ">>,?ERR_USERONCHANNEL,<<" ">>, Target,<<" ">>, Channel, <<" :">>,Reason]). 
+-define(REPLY_USERONCHANNEL,[<<":">>,ServerHostent,<<" ">>,?ERR_USERONCHANNEL,<<" ">>, Target,<<" ">>, Channel, <<" :">>,Target,Reason,<<"\r\n">>]). 
+
+-define(REPLY_KICK,[?USER_PREFIX,<<"KICK ">>,TargetChannel,<<" ">>,Target,<<"\r\n">>]).
+-define(REPLY_USERNOTONTHATCHANNEL,[?SERVER_PREFIX,?ERR_USERNOTINCHANNEL,<<" ">>,Target,<<" ">>,Channel,<<"\r\n">>]).
+-define(REPLY_NOTONCHANNEL,[?SERVER_PREFIX,?ERR_NOTONCHANNEL,<<" ">>,Channel,<<"\r\n">>]).
 %% :efnet.portlane.se 311 jajaja jajaja ~mattiasli nl119-199-61.student.uu.se * :realname
 %% :efnet.portlane.se 312 jajaja jajaja efnet.portlane.se :Portlane EFnet Server (IPv4, IPv6 & SSL)
 %% :efnet.portlane.se 338 jajaja jajaja 130.243.199.61 :actually using host

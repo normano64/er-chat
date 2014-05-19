@@ -50,7 +50,13 @@ loop(UserPid,OtherPid) ->
 		{_,<<"INVITE">>,List} ->
 		    OtherPid ! {invite, List},
 		    loop(UserPid, OtherPid);
-                {_,Command,_} ->
+                {_,<<"MODE">>,List} ->
+		    OtherPid ! {mode, List},
+		    loop(UserPid, OtherPid);
+		{_,<<"KICK">>,List}->
+		    OtherPid ! {kick, List},
+		    loop(UserPid,OtherPid);
+		{_,Command,_} ->
                     OtherPid ! {unknown,Command},
                     loop(UserPid,OtherPid)
                 end

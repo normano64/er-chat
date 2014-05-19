@@ -62,6 +62,12 @@ loop_other(Host,Socket,UserPid) ->
 	    io:format("ehh: ~p, ~p~n",[TargetNick,TargetChannel]),
 	    invite(Host,Socket,TargetNick, TargetChannel),
 	    loop_other(Host, Socket, UserPid);
+	{kick,[TargetChannel,TargetNick,Comment]} ->
+	    kick(Host,Socket,TargetChannel,TargetNick,Comment), 
+	    loop_other(Host,Socket,UserPid);
+	{mode,List} ->
+	    mode(Host,Socket,List),
+	    loop_other(Host,Socket,UserPid);
         {unknown,Command} ->
             {_ServerIP,ServerHostent} = Host,
             gen_tcp:send(Socket,?REPLY_UNKNOWNCOMMAND),
@@ -273,24 +279,46 @@ set_topic([Channel|Tail],Topic,{_ServerIp, ServerHostent},Socket) ->
 
 
 invite({_ServerIp,ServerHostent}, Socket, Target, Channel)->
-    {_,[{user,_,User,Nick,_,_,_,_}]} = database:check_socket(Socket),
-    case database:check_channel(Channel) of 
+    {_,[{user,_,User,Nick,_,Hostent,_,_}]} = database:check_socket(Socket),
+    case database:check_channel(Channel) of  
 	{_,[]} ->
-	    io:format("FAIL 1~n"),
 	    gen_tcp:send(Socket, ?REPLY_NOSUCHNICK);
 	{_,[{channel, Channel, NickList,_}]} ->
 	    case lists:keysearch(Target,2,NickList) of
 		false ->
-		    {_,[{user,TargetSocket,_,_,_,_,_,_}]} = database:check_nick(Target),
-		    
-		    gen_tcp:send(Socket, ?REPLY_INVITING),
-		    gen_tcp:send(TargetSocket, ?REPLY_INVITING),
-
-		    io:format("TARGETNICK2 we have nick ~p and channel ~p, ~p, ~p~n",[Target, Channel,Socket,TargetSocket]);
-	    
+		    case database:check_nick(Target) of
+			{_,[{user,TargetSocket,_,_,_,_,_,_}]} ->
+			    gen_tcp:send(TargetSocket, ?REPLY_INVITING);
+			_ ->
+			    gen_tcp:send(Socket, ?REPLY_NOSUCHNICK)
+		    end;
 		_ ->
-		    Reason = <<"user already in channel">>,
-		    io:format("User on channel already~n"),
+		    Reason = <<" already in channel">>,
 		    gen_tcp:send(Socket, ?REPLY_USERONCHANNEL)
-		end
+	    end
     end.
+
+mode({_ServerIp,_ServerHostent},_Socket,_List)->
+    ok.
+
+kick({_ServerIp,_ServerHostent},_Socket,TargetChannel,_Target,_Comment)->
+    {_,[{user,_,User,Nick,_,Hostent,_,ChannelList}]} = database:check_socket(Socket),
+    case database:check_channel(TargetChannel) of
+	{_,[]} ->
+	    %%no such channel
+	    gen_tcp:send(Socket,?REPLY_NOSUCHNICK);
+	{_,[{channel, Channel,NickList,_}]} ->
+	    case lists:keysearch(Target,2,NickList) of
+		false ->
+		    gen_tcp:send(Socket,?REPLY_USERNOTONTHATCHANNEL);
+		_ ->
+		    if lists:member(TargetChannel,ChannelList) == true ->
+			    case database:check_nick(Target) of 
+				{_, [{user,TargetSocket,_,_,_,_,_,_}]} ->
+				    database:part_channel(TargetChannel,Target,TargetSocket),
+				    transmit:send_kick(NickList,Nick,User,Hostent,Target,TargetChannel);
+				_ ->
+				    gen_tcp:send(Socket,?REPLY_NOSUCHNICK);
+		       true ->
+			    gen_tcp:send(Socket,?REPLY_REPLY_NOTONCHANNEL);
+	ok.
