@@ -35,7 +35,6 @@
 -define(ERR_USERONCHANNEL,<<"443">>).
 -define(RPL_INVITING,<<"341">>).
 -define(RPL_INVITED,<<"345">>).
--define(ERR_NOTONCHANNEL,<<"442">>).
 -define(ERR_USERNOTINCHANNEL,<<"441">>).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                                                                                     %%

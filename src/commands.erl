@@ -301,7 +301,7 @@ invite({_ServerIp,ServerHostent}, Socket, Target, Channel)->
 mode({_ServerIp,_ServerHostent},_Socket,_List)->
     ok.
 
-kick({_ServerIp,_ServerHostent},_Socket,TargetChannel,_Target,_Comment)->
+kick({_ServerIp,ServerHostent},Socket,TargetChannel,Target,_Comment)->
     {_,[{user,_,User,Nick,_,Hostent,_,ChannelList}]} = database:check_socket(Socket),
     case database:check_channel(TargetChannel) of
 	{_,[]} ->
@@ -312,13 +312,17 @@ kick({_ServerIp,_ServerHostent},_Socket,TargetChannel,_Target,_Comment)->
 		false ->
 		    gen_tcp:send(Socket,?REPLY_USERNOTONTHATCHANNEL);
 		_ ->
-		    if lists:member(TargetChannel,ChannelList) == true ->
+		    case lists:member(TargetChannel,ChannelList) of
+			true->
 			    case database:check_nick(Target) of 
 				{_, [{user,TargetSocket,_,_,_,_,_,_}]} ->
 				    database:part_channel(TargetChannel,Target,TargetSocket),
 				    transmit:send_kick(NickList,Nick,User,Hostent,Target,TargetChannel);
 				_ ->
-				    gen_tcp:send(Socket,?REPLY_NOSUCHNICK);
-		       true ->
-			    gen_tcp:send(Socket,?REPLY_REPLY_NOTONCHANNEL);
-	ok.
+				    gen_tcp:send(Socket,?REPLY_NOSUCHNICK)
+			    end;
+			_ ->
+			    gen_tcp:send(Socket,?REPLY_NOTONCHANNEL)
+		    end
+	    end
+    end.
