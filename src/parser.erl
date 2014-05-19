@@ -56,6 +56,9 @@ loop(UserPid,OtherPid) ->
 		{_,<<"KICK">>,List}->
 		    OtherPid ! {kick, List},
 		    loop(UserPid,OtherPid);
+		{_,<<"NAMES">>,List}->
+		    OtherPid ! {names, List},
+		    loop(UserPid,OtherPid);
 		{_,Command,_} ->
                     OtherPid ! {unknown,Command},
                     loop(UserPid,OtherPid)
