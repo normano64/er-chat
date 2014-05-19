@@ -59,11 +59,13 @@ loop_other(Host,Socket,UserPid) ->
 	   set_topic(ChannelList, Topic, Host, Socket),
 	   loop_other(Host, Socket, UserPid);
 	{invite, [TargetNick, TargetChannel]} ->
+	    io:format("ehh: ~p, ~p~n",[TargetNick,TargetChannel]),
 	    invite(Host,Socket,TargetNick, TargetChannel),
 	    loop_other(Host, Socket, UserPid);
         {unknown,Command} ->
             {_ServerIP,ServerHostent} = Host,
             gen_tcp:send(Socket,?REPLY_UNKNOWNCOMMAND),
+	    io:format("Error Command:~p~n",[Command]),
             loop_other(Host,Socket,UserPid);
         Error ->
             io:format("Error nick:~p~n",[Error])
@@ -269,17 +271,26 @@ set_topic([Channel|Tail],Topic,{_ServerIp, ServerHostent},Socket) ->
     end,
     set_topic(Tail,Topic,{_ServerIp, ServerHostent},Socket).
 
+
 invite({_ServerIp,ServerHostent}, Socket, Target, Channel)->
+    {_,[{user,_,User,Nick,_,_,_,_}]} = database:check_socket(Socket),
     case database:check_channel(Channel) of 
 	{_,[]} ->
+	    io:format("FAIL 1~n"),
 	    gen_tcp:send(Socket, ?REPLY_NOSUCHNICK);
 	{_,[{channel, Channel, NickList,_}]} ->
-	    case lists:member(Target,NickList) of
+	    case lists:keysearch(Target,2,NickList) of
 		false ->
-		    gen_tcp:send(Socket, ?REPLY_NOSUCHNICK);
-		true ->
+		    {_,[{user,TargetSocket,_,_,_,_,_,_}]} = database:check_nick(Target),
+		    
 		    gen_tcp:send(Socket, ?REPLY_INVITING),
-		    io:format("TARGETNICK2 we have nick and channel ~p ~p~n",[Target, Channel]),
-		    ok
-	    end
+		    gen_tcp:send(TargetSocket, ?REPLY_INVITING),
+
+		    io:format("TARGETNICK2 we have nick ~p and channel ~p, ~p, ~p~n",[Target, Channel,Socket,TargetSocket]);
+	    
+		_ ->
+		    Reason = <<"user already in channel">>,
+		    io:format("User on channel already~n"),
+		    gen_tcp:send(Socket, ?REPLY_USERONCHANNEL)
+		end
     end.

@@ -30,9 +30,9 @@
 -define(ERR_NOTONCHANNEL,<<"442">>). %% <channel> :You're not on that channel
 -define(ERR_ALREADYREGISTRED,<<"462">>). % <nick> :Nickname is already in use
 -define(ERR_CHANOPRIVSNEEDED,<<"482">>). %% <channel> :You're not channel operator
-
+-define(ERR_USERONCHANNEL,<<"443">>).
 -define(RPL_INVITING,<<"341">>).
-
+-define(RPL_INVITED,<<"345">>).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%                                                                                     %%
 %%                                                                                     %%
@@ -65,10 +65,11 @@
 -define(REPLY_NOTCHANOP,[<<":">>,ServerHostent,<<" ">>,?ERR_CHANOPRIVSNEEDED,<<" ">>,Nick,<<" ">>,Channel,<<" :You're not channel operator\r\n">>]).
 -define(REPLY_NEWTOPIC,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" TOPIC ">>,Channel,<<" :">>,Topic,<<"\r\n">>]).
 
-%%not implemented macros
-%%-define(REPLY_INVITE,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent <<" INVITE ">>, Target,<<" ">>, Channel]).
--define(REPLY_INVITING,[<<":">>,ServerHostent,<<" ">>,?RPL_INVITING,<<" ">>, <<" INVITE ">>, Target,<<" ">>, Channel]).
+%%for invite
+-define(REPLY_INVITING,[<<":">>,Nick,<<"!">>,User,<<"@">>,ServerHostent,<<" ">>,?RPL_INVITING, <<" INVITE ">>, Target,<<" ">>, Channel]).
 
+%%-define(REPLY_INVITED,[<<":">>,ServerHostent,<<" ">>,?RPL_INVITING,<<" ">>, <<" INVITE ">>, Target,<<" ">>, Channel]).
+-define(REPLY_USERONCHANNEL,[<<":">>,ServerHostent,<<" ">>,?ERR_USERONCHANNEL,<<" ">>, Target,<<" ">>, Channel, <<" :">>,Reason]). 
 %% :efnet.portlane.se 311 jajaja jajaja ~mattiasli nl119-199-61.student.uu.se * :realname
 %% :efnet.portlane.se 312 jajaja jajaja efnet.portlane.se :Portlane EFnet Server (IPv4, IPv6 & SSL)
 %% :efnet.portlane.se 338 jajaja jajaja 130.243.199.61 :actually using host
