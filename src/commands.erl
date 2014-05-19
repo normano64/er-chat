@@ -68,7 +68,12 @@ loop_other(Host,Socket,UserPid) ->
 	{mode,List} ->
 	    mode(Host,Socket,List),
 	    loop_other(Host,Socket,UserPid);
-        {unknown,Command} ->
+        {names,List} ->
+	    ChannelList = binary:split(List,<<",">>),
+	    {_,[{user,_,_,Nick,_,_,_,_}]} = database:check_socket(Socket),
+	    names(Host,ChannelList,Socket,Nick),
+	    loop_other(Host,Socket,UserPid);
+	{unknown,Command} ->
             {_ServerIP,ServerHostent} = Host,
             gen_tcp:send(Socket,?REPLY_UNKNOWNCOMMAND),
 	    io:format("Error Command:~p~n",[Command]),
@@ -168,7 +173,8 @@ join([Channel|Tail],{ServerIP,ServerHostent},Socket) ->
                     gen_tcp:send(Socket,?REPLY_JOINCHANNEL),
                     if
                         Topic == <<"">> ->
-                            gen_tcp:send(Socket,?REPLY_JOINNOTOPIC);
+                            ok;
+			    %%gen_tcp:send(Socket,?REPLY_JOINNOTOPIC);
                         true ->
                             gen_tcp:send(Socket,?REPLY_JOINTOPIC)
                     end,
@@ -326,3 +332,16 @@ kick({_ServerIp,ServerHostent},Socket,TargetChannel,Target,_Comment)->
 		    end
 	    end
     end.
+
+names([],_List,_Socket,_Nick)->
+    ok;
+names({_ServerIp,ServerHostent},[Channel|Tail],Socket,Nick)->
+    case database:check_channel(Channel) of
+	 {_,[{channel,_,Users,_Topic}]} ->
+	    UserList = transmit:convert_nicklist(Users),
+	    gen_tcp:send(Socket,?REPLY_JOINNAMREPLY),
+	    gen_tcp:send(Socket,?REPLY_ENDOFNAMES);
+	_ ->
+	    ok
+    end,
+    names({_ServerIp,ServerHostent},Tail,Socket, Nick).
