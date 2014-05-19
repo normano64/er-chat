@@ -69,9 +69,9 @@ loop_other(Host,Socket,UserPid) ->
 	    mode(Host,Socket,List),
 	    loop_other(Host,Socket,UserPid);
         {names,[Channels]} ->
-	    ChannelList = binary:split(Channels,<<",">>),
+	    ChannelList = binary:split(List,<<",">>),
 	    {_,[{user,_,_,Nick,_,_,_,_}]} = database:check_socket(Socket),
-	    names(ChannelList,Host,Socket,Nick),
+	    names(Host,ChannelList,Socket,Nick),
 	    loop_other(Host,Socket,UserPid);
 	{unknown,Command} ->
             {_ServerIP,ServerHostent} = Host,
@@ -335,13 +335,22 @@ kick({_ServerIp,ServerHostent},Socket,TargetChannel,Target,_Comment)->
 
 names([],_List,_Socket,_Nick)->
     ok;
-names([Channel|Tail],{_ServerIp,ServerHostent},Socket,Nick)->
+names({_ServerIp,ServerHostent},[Channel|Tail],Socket,Nick)->
     case database:check_channel(Channel) of
-        {_,[{channel,_,Users,_Topic}]} ->
+	 {_,[{channel,_,Users,_Topic}]} ->
 	    UserList = transmit:convert_nicklist(Users),
 	    gen_tcp:send(Socket,?REPLY_JOINNAMREPLY),
 	    gen_tcp:send(Socket,?REPLY_ENDOFNAMES);
 	_ ->
 	    ok
     end,
-    names(Tail,{_ServerIp,ServerHostent},Socket, Nick).
+    names({_ServerIp,ServerHostent},Tail,Socket, Nick).
+
+%% KICK - fix comment
+%% JOIN - ska alltid få in #, om den inte har det är det ingen kanal. Användare kan inte ha det som username eller nickname
+%% LIST - lists all channels
+%% AWAY - makes user away
+%% PING/PONG
+%% OPER - make an users operator
+%% MODE - privliges, gives users or gives privilegies
+%% WHO - kanske

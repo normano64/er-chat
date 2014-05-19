@@ -5,7 +5,7 @@
 extract_nick([],Ack)->
     Ack;
 extract_nick([{_Status,Nick}|T],Ack) ->
-    extract_nick(T,Ack ++ Nick).
+    extract_nick(T,[Nick|Ack]).
     
 channel_change_nick([],_NewNick,UserList,_Socket) ->
     UserList;
