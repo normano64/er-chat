@@ -6,6 +6,8 @@
 -include_lib("stdlib/include/qlc.hrl").
 -record(channel,{id, users, topic}).
 -record(user,{socket, user, nick, server,hostent, realname, channel_list}). %%add channel list
+-record(server,{id, socket}). %%what additional parameters?
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
 %                               Database functions                                          %
@@ -23,8 +25,8 @@ create_db()->
     mnesia:create_schema(ListNodes),
     mnesia:start(),
     mnesia:create_table(user,[{attributes,record_info(fields,user)},{type,set}]),
-    mnesia:create_table(channel,[{attributes,record_info(fields,channel)},{disc_copies,ListNodes},{type,set}]).
-
+    mnesia:create_table(channel,[{attributes,record_info(fields,channel)},{disc_copies,ListNodes},{type,set}]),
+    mnesia:create_table(server,[{attributes, record_info(fields,server)},{disc_copies,ListNodes},{type,set}]).
 
 
 %% @doc	traverse_table_and_show, This function simply traverse the desired table in the database and prints it in the shell. 
@@ -240,6 +242,31 @@ match(#user{nick=Desc}, Keyword) ->
 
 search(Keyword) ->
     qlc:eval(qlc:q([U || U <- mnesia:table(user), match(U, Keyword)])).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                                           %
+%                               Server Functions                                            %
+%                                                                                           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% @doc	insert_server, This function adds a server where the id is the parameter ServerName. The Server can be found with it's unique socket.
+
+insert_server(ServerName,Socket) ->
+    Data = #user{id=Servername, socket=Socket},
+    F = fun() ->
+		mnesia:write(Data)
+	end,
+    mnesia:transaction(F).
+
+%% @doc delete_server. This function deletes a server named in the parameter Server.
+
+delete_server(Server)->
+    F = fun()->
+		mnesia:delete({server,Server})
+	end,
+    mnesia:transaction(F).
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
 %                               EUnit database test                                         %
