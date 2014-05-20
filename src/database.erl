@@ -6,7 +6,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 -record(channel,{id, users, topic}).
 -record(user,{socket, user, nick, server,hostent, realname, channel_list}). %%add channel list
--record(server,{id, socket}). %%what additional parameters?
+-record(server,{id,servername,socket}). %%what additional parameters?
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
@@ -252,8 +252,8 @@ search(Keyword) ->
 
 %% @doc	insert_server, This function adds a server where the id is the parameter ServerName. The Server can be found with it's unique socket.
 
-insert_server(ServerName,Socket) ->
-    Data = #user{id=Servername, socket=Socket},
+insert_server(Id,Servername,Socket,Active) ->
+    Data = #user{id=Id,servername=Servername socket=Socket, active=Active},
     F = fun() ->
 		mnesia:write(Data)
 	end,
