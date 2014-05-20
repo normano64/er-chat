@@ -26,8 +26,11 @@
 -define(RPL_ENDOFNAMES,<<"366">>). %<channel> :End of NAMES list
 
 % Error replies 400-599
--define(ERR_NOSUCHNICK,<<"401">>). % <nickname> :No such nick/channel-define(ERR_NOSUCHSERVER,<<"402">>). % <server name> :No such server"
+-define(ERR_NOSUCHNICK,<<"401">>). % <nickname> :No such nick/channel
+-define(ERR_NOSUCHSERVER,<<"402">>). % <server name> :No such server
+-define(ERR_NOSUCHCHANNEL,<<"403">>).
 -define(ERR_UNKNOWNCOMMAND,<<"421">>). %% <command> :Unknown command
+-define(ERR_ERRONEUSNICKNAME,<<"432">>). %% <nick> :Erroneous nickname
 -define(ERR_NICKNAMEINUSE,<<"433">>). % <nick> :Nickname is already in use
 -define(ERR_NOTONCHANNEL,<<"442">>). %% <channel> :You're not on that channel
 -define(ERR_ALREADYREGISTRED,<<"462">>). % <nick> :Nickname is already in use
@@ -48,6 +51,8 @@
 -define(REPLY_ALREADYREGISTERD,[<<":">>,ServerHostent,<<" ">>,?ERR_ALREADYREGISTRED,<<" ">>,Nick,<<" :You may not reregister\r\n">>]).
 -define(REPLY_UPDATENICK,[<<":">>,OldNick,<<"!">>,User,<<"@">>,Hostent,<<" NICK :">>,Nick,<<"\r\n">>]).
 -define(REPLY_NICKNAMEINUSE,[<<":">>,ServerHostent,<<" ">>,?ERR_NICKNAMEINUSE,<<" * ">>,Nick,<<" :Nickname is already in use.\r\n">>]).
+-define(REPLY_ERRONEUSNICKNAME,[?SERVER_PREFIX,<<" ">>,?ERR_ERRONEUSNICKNAME,<<" ">>,OldNick,<<" ">>,Nick,<<" :Erroneous nickname\r\n">>]).
+
 -define(REPLY_PING,[<<"PING :">>,ServerHostent,<<"\r\n">>]).
 -define(REPLY_QUIT,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" QUIT :">>,"Gone to buy cheese.",<<"\r\n">>]).
 -define(REPLY_PONG,[<<"PONG ">>,ServerHostent,<<" ">>,Nick,<<"\r\n">>]).
@@ -59,8 +64,9 @@
 -define(REPLY_ENDOFNAMES,[<<":">>,ServerHostent,<<" ">>,?RPL_ENDOFNAMES,<<" ">>,Nick,<<" ">>,Channel,<<" :End of NAMES list\r\n">>]).
 -define(REPLY_PRIVMSG,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" PRIVMSG ">>,Target,<<" :">>,Message,<<"\r\n">>]).
 -define(REPLY_PART,[<<":">>,Nick,<<"!">>,User,<<"@">>,Hostent,<<" PART ">>,Target,<<" :">>,Message,<<"\r\n">>]).
+-define(REPLY_NOSUCHCHANNEL,[?SERVER_PREFIX,<<" ">>,?ERR_NOSUCHCHANNEL,<<" ">>,?ERR_NOSUCHCHANNEL,<<" ">>,Nick,<<" ">>,Channel,<<" :No such channel\r\n">>]).
 
--define(REPLY_NOSUCHNICK,[<<":">>,ServerHostent,<<" ">>,?ERR_NOSUCHNICK,<<" ">>, Target, <<" :No such nick/channel\r\n">>]). 
+-define(REPLY_NOSUCHNICK,[<<":">>,ServerHostent,<<" ">>,?ERR_NOSUCHNICK,<<" ">>,Nick,<<" ">>,Target, <<" :No such nick/channel\r\n">>]). 
 -define(REPLY_ENDOFWHOIS,[<<":">>,ServerHostent,<<" ">>,?RPL_ENDOFWHOIS,<<" ">>,Nick,<<" ">>, Target, <<" :End of /WHOIS list\r\n">>]). 
 -define(REPLY_WHOISUSER,[<<":">>,ServerHostent,<<" ">>,?RPL_WHOISUSER,<<" ">>,Nick,<<" ">>,Target,<<" ">> ,UserHostent,<<" * :">>,TargetRealName,<<"\r\n">>]).
 -define(REPLY_WHOISSERVER,[<<":">>,ServerHostent,<<" ">>,?RPL_WHOISSERVER,<<" ">>,Nick,<<" ">>,Target,<<" ">>,UserServer,<<" :hardcoded server name\r\n">>]).
