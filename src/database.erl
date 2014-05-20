@@ -6,7 +6,7 @@
 -include_lib("stdlib/include/qlc.hrl").
 -record(channel,{id, users, topic}).
 -record(user,{socket, user, nick, server,hostent, realname, channel_list}). %%add channel list
--record(server,{id,servername,socket}). %%what additional parameters?
+-record(server,{id,servername,socket,active}). %%what additional parameters?
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
@@ -235,15 +235,6 @@ change_channel_nick(ChannelName,NewNick,Socket)->
 	end,
     mnesia:transaction(F).
 
-match(#user{nick=Desc}, Keyword) ->
-    Left = string:to_lower(Desc),
-    Right = string:to_lower(Keyword),
-    string:str(Left, Right) > 0.
-
-search(Keyword) ->
-    qlc:eval(qlc:q([U || U <- mnesia:table(user), match(U, Keyword)])).
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
 %                               Server Functions                                            %
@@ -253,7 +244,7 @@ search(Keyword) ->
 %% @doc	insert_server, This function adds a server where the id is the parameter ServerName. The Server can be found with it's unique socket.
 
 insert_server(Id,Servername,Socket,Active) ->
-    Data = #user{id=Id,servername=Servername socket=Socket, active=Active},
+    Data = #server{id=Id,servername=Servername, socket=Socket, active=Active},
     F = fun() ->
 		mnesia:write(Data)
 	end,
@@ -318,13 +309,21 @@ nick_test()->
 
 
 channel_test()->
-	[reset(),
-	create_db(),
-	insert_user(123,kalle,stekare,servername,host,"Kalle Anka"),
-	?assertMatch({atomic, ok} , insert_channel(computers, {online,stekare},keyboards)),
-	?assertMatch({_,[{_,computers,[{online,stekare}],keyboards}]} , check_channel(computers)),
-	?assertMatch({atomic,{atomic, ok}}, part_channel(computers, stekare, 123)),
-	?assertMatch({atomic,[]} , check_channel(computers)),{test_passed,ok}].
+    delete_table_db(user),
+    delete_table_db(channel),
+    delete_table_db(server),
+    create_db(),
+    insert_user(<<"Socket1">>,<<"UserKalle">>,{"nick1",<<"NiCk1">>},<<"Servername1">>,<<"Hostname1">>,<<"Realname1">>),
+    insert_user(<<"Socket2">>,<<"UserRandom">>,{"randomuser",<<"RandomUser">>},<<"Servername2">>,<<"Hostname2">>,<<"Realname2">>),
+    insert_channel(<<"#Channel1">>,{<<"@">>,<<"NiCk1">>},<<"Topic">>),
+    join_channel(<<"#Channel1">>,{<<"">>,<<"RandomUser">>},<<"Socket2">>),
+
+    [?assertMatch({_,[{channel,<<"#Channel1">>,[{<<"">>,<<"RandomUser">>},{<<"@">>,<<"NiCk1">>}],<<"Topic">>}]},check_channel(<<"#Channel1">>)),
+     ?assertMatch({_,[]},check_channel(<<"NotExistingChannel">>)),
+     ?assertMatch({atomic,_},part_channel(<<"#Channel1">>,<<"RandomUser">>,<<"Socket2">>)),
+     ?assertMatch({_,[{channel,<<"#Channel1">>,[{<<"@">>,<<"NiCk1">>}],<<"Topic">>}]},check_channel(<<"#Channel1">>)),
+     ?assertMatch({_,[{user,_,_,_,_,_,_,[]}]},check_socket(<<"Socket2">>)),
+     ?assertMatch({_,[{user,_,_,_,_,_,_,[<<"#Channel1">>]}]},check_socket(<<"Socket1">>))].
 
 
 
