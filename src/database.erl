@@ -3,6 +3,7 @@
 -module(database).
 -compile(export_all).
 -include_lib("eunit/include/eunit.hrl").
+-include_lib("stdlib/include/qlc.hrl").
 -record(channel,{id, users, topic}).
 -record(user,{socket, user, nick, server,hostent, realname, channel_list}). %%add channel list
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,7 +37,8 @@ traverse_table_and_show(Table_name)->
                     []
                 end,
     case mnesia:is_transaction() of
-        true -> mnesia:foldl(Iterator,[],Table_name);
+        true ->
+	    mnesia:foldl(Iterator,[],Table_name);
         false -> 
             Exec = fun({Fun,Tab}) -> mnesia:foldl(Fun, [],Tab) end,
             mnesia:activity(transaction,Exec,[{Iterator,Table_name}],mnesia_frag)
@@ -80,9 +82,10 @@ check_socket(Socket)->
 
 check_nick(Nick)->
     F = fun() ->
-		Found = mnesia:match_object({user,'_','_',Nick,'_','_','_','_'}),
-		Found
-	end,
+		LowerCase = string:to_lower(binary:bin_to_list(Nick)),
+		Match = mnesia:match_object({user,'_','_',{LowerCase,'_'},'_','_','_','_'}),
+		Match
+	   end,
     mnesia:transaction(F).
 
 find_nick([])->
@@ -223,12 +226,20 @@ change_channel_nick(ChannelName,NewNick,Socket)->
     F = fun() ->
 		[Channel] = mnesia:wread({channel, ChannelName}),
 		{_, [{_, _Name, NickList, _Topic}]} = check_channel(ChannelName),
-		{_,Nick} = get_nick(Socket),
+		{_,{_,Nick}} = get_nick(Socket),
 		{value,{Status, _Nick}} = lists:keysearch(Nick,2,NickList),
 		NewNickList = lists:keyreplace(Nick,2,NickList,{Status,NewNick}),
 		mnesia:write(Channel#channel{users= NewNickList})
 	end,
     mnesia:transaction(F).
+
+match(#user{nick=Desc}, Keyword) ->
+    Left = string:to_lower(Desc),
+    Right = string:to_lower(Keyword),
+    string:str(Left, Right) > 0.
+
+search(Keyword) ->
+    qlc:eval(qlc:q([U || U <- mnesia:table(user), match(U, Keyword)])).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
 %                               EUnit database test                                         %

@@ -80,7 +80,8 @@
 %%-define(REPLY_INVITED,[<<":">>,ServerHostent,<<" ">>,?RPL_INVITING,<<" ">>, <<" INVITE ">>, Target,<<" ">>, Channel]).
 -define(REPLY_USERONCHANNEL,[<<":">>,ServerHostent,<<" ">>,?ERR_USERONCHANNEL,<<" ">>, Target,<<" ">>, Channel, <<" :">>,Target,Reason,<<"\r\n">>]). 
 
--define(REPLY_KICK,[?USER_PREFIX,<<"KICK ">>,TargetChannel,<<" ">>,Target,<<"\r\n">>]).
+-define(REPLY_KICK_NOCOMMENT,[?USER_PREFIX,<<"KICK ">>,TargetChannel,<<" ">>,Target,<<"\r\n">>]).
+-define(REPLY_KICK_COMMENT,[?USER_PREFIX,<<"KICK ">>,TargetChannel,<<" ">>,Target,<<" :">>,Comment,<<"\r\n">>]).
 -define(REPLY_USERNOTONTHATCHANNEL,[?SERVER_PREFIX,?ERR_USERNOTINCHANNEL,<<" ">>,Target,<<" ">>,Channel,<<"\r\n">>]).
 -define(REPLY_NOTONCHANNEL,[?SERVER_PREFIX,?ERR_NOTONCHANNEL,<<" ">>,Channel,<<"\r\n">>]).
 %% :efnet.portlane.se 311 jajaja jajaja ~mattiasli nl119-199-61.student.uu.se * :realname
