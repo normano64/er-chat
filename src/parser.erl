@@ -66,8 +66,8 @@ loop(UserPid,OtherPid) ->
 		    OtherPid ! {list, List},
 		    loop(UserPid, OtherPid);
 %% SERVER COMMANDS
-%% NICK,JOIN och QUIT ska in på servercommands		
-%% Eftersom de har motsvarande på client calls så måste de skiljas på.
+%% NICK,JOIN och QUIT ska in pÃ¥ servercommands		
+%% Eftersom de har motsvarande pÃ¥ client calls sÃ¥ mÃ¥ste de skiljas pÃ¥.
 	
 		{Prefix,<<"NJOIN">>, List} ->
 		    OtherPid ! {Prefix, njoin, List},
@@ -78,7 +78,7 @@ loop(UserPid,OtherPid) ->
 		{Prefix, <<"SQUIT">>, List}->
 		    OtherPid ! {Prefix, squit, List},
 		    loop(UserPid, OtherPid);
-		{Prefix, <<"SERVICE">>, LIST}->   
+		{Prefix, <<"SERVICE">>, List}->   
 		    OtherPid ! {Prefix, service, List},
 		    loop(UserPid, OtherPid);
 		{Prefix, <<"PASS">>, List}->
