@@ -92,6 +92,7 @@
 -define(REPLY_LISTENED,[?SERVER_PREFIX,?RPL_LISTENED,<<" :">>,Info,<<"\r\n">>]).
 
 -define(REPLY_ENDOFWHO,[<<":">>,ServerHostent,<<" ">>,?RPL_ENDOFWHO,<<" ">>,Nick,<<" ">>, Channel, <<" :End of /WHO list\r\n">>]).
+%% Det är oklart vad h är i det här
 -define(REPLY_WHO,[<<":">>,ServerHostent,<<" ">>,?RPL_WHOREPLY,<<" ">>,Nick,<<" ">>,Channel,<<" ">>,User,<<" ">>,UserHostent,<<" ">>,UserServer,<<" ">>,NickDb,<<" H">>,Status,<<" :0 ">>,RealName,<<"\r\n">>]). 
 %% :efnet.portlane.se 311 jajaja jajaja ~mattiasli nl119-199-61.student.uu.se * :realname
 %% :efnet.portlane.se 312 jajaja jajaja efnet.portlane.se :Portlane EFnet Server (IPv4, IPv6 & SSL)
