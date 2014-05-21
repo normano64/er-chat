@@ -2,6 +2,13 @@
 -compile(export_all).
 -include("rpl_macro.hrl").
 
+is_channel(Channel)->
+    case binary:first(Channel) of
+        35 ->
+            true;
+        _ ->
+            false
+    end.
 
 get_comment([_Nick|Comment])->
     Comment.
@@ -85,3 +92,10 @@ send_kick([{_Status,NickDb}|Tail],{Lnick,Nick},User,Hostent,Target,TargetChannel
     {_,[{user,SocketToSendTo,_,_,_,_,_,_}]} = database:check_nick(NickDb),
     gen_tcp:send(SocketToSendTo,?REPLY_KICK_NOCOMMENT), 
     send_kick(Tail,{Lnick,Nick},User,Hostent,Target,TargetChannel).
+
+send_wholist([],_Socket,_Nick) ->
+    ok;
+send_wholist([{Status,NickDb}|Tail],Socket,Nick) ->
+    {_,[{user,_,User,_,UserServer,UserHostent,RealName,_ChannelList}]} = database:check_nick(NickDb),
+    gen_tcp:send(Socket,?REPLY_WHO),
+    send_wholist(Tail,Socket,Nick).
