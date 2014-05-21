@@ -15,6 +15,7 @@
 -define(RPL_WHOISUSER,<<"311">>).
 -define(RPL_WHOISSERVER,<<"312">>).
 -define(RPL_WHOISACTUALLY,<<"338">>).
+-define(RPL_ENDOFWHO,<<"315">>).
 -define(RPL_WHOISIDLE,<<"317">>).
 -define(RPL_ENDOFWHOIS,<<"318">>).
 
@@ -23,6 +24,7 @@
 -define(RPL_TOPIC,<<"332">>). % <channel> :<topic>
 
 %% Channel replies
+-define(RPL_WHOREPLY,<<"352">>).
 -define(RPL_NAMREPLY,<<"353">>). % ( "=" / "*" / "@" ) <channel> :[ "@" / "+" ] <nick> *( " " [ "@" / "+" ] <nick> )
 -define(RPL_ENDOFNAMES,<<"366">>). %<channel> :End of NAMES list
 
@@ -85,8 +87,12 @@
 -define(REPLY_KICK_COMMENT,[?USER_PREFIX,<<"KICK ">>,TargetChannel,<<" ">>,Target,<<" :">>,Comment,<<"\r\n">>]).
 -define(REPLY_USERNOTONTHATCHANNEL,[?SERVER_PREFIX,?ERR_USERNOTINCHANNEL,<<" ">>,Target,<<" ">>,Channel,<<"\r\n">>]).
 -define(REPLY_NOTONCHANNEL,[?SERVER_PREFIX,?ERR_NOTONCHANNEL,<<" ">>,Channel,<<"\r\n">>]).
+
 -define(REPLY_LIST,[?SERVER_PREFIX,?RPL_LIST,<<" ">>,Channel,<<" :">>,Topic,<<"\r\n">>]).
 -define(REPLY_LISTENED,[?SERVER_PREFIX,?RPL_LISTENED,<<" :">>,Info,<<"\r\n">>]).
+
+-define(REPLY_ENDOFWHO,[<<":">>,ServerHostent,<<" ">>,?RPL_ENDOFWHO,<<" ">>,Nick,<<" ">>, Channel, <<" :End of /WHO list\r\n">>]).
+-define(REPLY_WHO,[<<":">>,ServerHostent,<<" ">>,?RPL_WHOREPLY,<<" ">>,Nick,<<" ">>,Channel,<<" ">>,User,<<" ">>,UserHostent,<<" ">>,UserServer,<<" ">>,NickDb,<<" H">>,Status,<<" :0 ">>,RealName,<<"\r\n">>]). 
 %% :efnet.portlane.se 311 jajaja jajaja ~mattiasli nl119-199-61.student.uu.se * :realname
 %% :efnet.portlane.se 312 jajaja jajaja efnet.portlane.se :Portlane EFnet Server (IPv4, IPv6 & SSL)
 %% :efnet.portlane.se 338 jajaja jajaja 130.243.199.61 :actually using host

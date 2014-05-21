@@ -75,6 +75,9 @@ loop_other(Host,Socket,UserPid) ->
 	    {_,[{user,_,_,{_,Nick},_,_,_,_}]} = database:check_socket(Socket),
 	    names(Host,ChannelList,Socket,Nick),
 	    loop_other(Host,Socket,UserPid);
+        {who,[Channel]} ->
+	    who(Host,Channel,Socket,Nick),
+	    loop_other(Host,Socket,UserPid);
 	{list, [Channels]}->
 	    ChannelList = binary:split(Channels,<<",">>,[global]),
 	    if
@@ -375,7 +378,6 @@ names({_ServerIp,ServerHostent},[Channel|Tail],Socket,Nick)->
     end,
     names({_ServerIp,ServerHostent},Tail,Socket, Nick).
 
-
 get_all_channels() ->
     {_,Channel} = database:get_first_channel(channel),
     get_all_channels(Channel,[Channel]).
@@ -402,6 +404,24 @@ list({_ServerIp,ServerHostent},[Channel|Tail],Socket)->
     list({_ServerIp,ServerHostent},Tail,Socket).
 
 %% LIST - lists all channels, 
+who({_ServerIp,ServerHostent},Socket,Nick,Channel) ->
+    case transmit:is_channel(Channel) of
+        true ->
+            case database:check_channel() of
+                {_,[{channel,_,NickList,_}]} ->
+                    transmit:send_wholist(NickList,Socket,Nick);
+                    gen_tcp:send(Socket,?REPLY_ENDWHOIS);
+                _ ->
+                    gen_tcp:send(Socket,?REPLY_ENDWHOIS)
+            end;
+        false ->
+            
+    end.
+
+
+%% JOIN - ska alltid få in #, om den inte har det är det ingen kanal. Användare kan inte ha det som username eller nickname
+%% string:to_lower för alla compares med users och nick
+%% LIST - lists all channels
 %% AWAY - makes user away
 %% PING/PONG - kolla så dom fungerar som dom ska
 %% OPER - make an users operator
