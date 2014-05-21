@@ -77,7 +77,12 @@ loop_other(Host,Socket,UserPid) ->
 	    loop_other(Host,Socket,UserPid);
 	{list, [Channels]}->
 	    ChannelList = binary:split(Channels,<<",">>,[global]),
-	    list(Host,ChannelList,Socket),
+	    if
+		ChannelList == [] ->
+		    list(Host,Socket);
+		true ->
+		    list(Host,ChannelList,Socket)
+	    end,
 	    loop_other(Host, Socket, UserPid);
 	{unknown,Command} ->
             {_ServerIP,ServerHostent} = Host,
@@ -357,7 +362,7 @@ kick({_ServerIp,ServerHostent},Socket,TargetChannel,Target,Comment)->
 	    end
     end.
 
-names([],_List,_Socket,_Nick)->
+names(_Host,[],_Socket,_Nick)->
     ok;
 names({_ServerIp,ServerHostent},[Channel|Tail],Socket,Nick)->
     case database:check_channel(Channel) of
@@ -369,8 +374,28 @@ names({_ServerIp,ServerHostent},[Channel|Tail],Socket,Nick)->
 	    ok
     end,
     names({_ServerIp,ServerHostent},Tail,Socket, Nick).
-list(_Host,[],_Socket)->
-    ok;
+
+
+get_all_channels() ->
+    {_,Channel} = database:get_first_channel(channel),
+    get_all_channels(Channel,[Channel]).
+get_all_channels(ChannelKey,Ack) ->
+    {_,Channel} = database:get_next_channel(channel,ChannelKey),
+    if 
+	Channel == '$end_of_table' ->
+	    Ack;
+	true ->
+	    get_all_channels(Channel,[Channel|Ack])
+    end.
+    
+
+list(Host, Socket)->
+    ChannelList = get_all_channels(),
+    list(Host,ChannelList,Socket).
+
+list({_ServerIp,ServerHostent},[],Socket)->
+    Info = <<"">>,
+    gen_tcp:send(Socket,?REPLY_LISTENED);
 list({_ServerIp,ServerHostent},[Channel|Tail],Socket)->
     {_,[{channel,_,_,Topic}]} = database:check_channel(Channel),
     gen_tcp:send(Socket,?REPLY_LIST),

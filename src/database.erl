@@ -235,6 +235,18 @@ change_channel_nick(ChannelName,NewNick,Socket)->
 	end,
     mnesia:transaction(F).
 
+get_first_channel(Tab)->
+   F = fun()-> 
+	       First = mnesia:first(Tab),
+	       First
+       end,
+    mnesia:transaction(F).
+get_next_channel(Tab,Key)->
+    F = fun()->
+		Next = mnesia:next(Tab,Key),
+		Next
+	end,
+    mnesia:transaction(F).
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
 %                               Server Functions                                            %
