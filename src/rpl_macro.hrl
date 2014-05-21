@@ -9,7 +9,7 @@
 
 % Command replies 200-399
 -define(RPL_AWAY,<<"301">>). % <nick> :<away message>
-
+-define(RPL_LIST,<<"322">>).
 %% Replies for whois
 -define(RPL_WHOISUSER,<<"311">>).
 -define(RPL_WHOISSERVER,<<"312">>).
@@ -84,6 +84,7 @@
 -define(REPLY_KICK_COMMENT,[?USER_PREFIX,<<"KICK ">>,TargetChannel,<<" ">>,Target,<<" :">>,Comment,<<"\r\n">>]).
 -define(REPLY_USERNOTONTHATCHANNEL,[?SERVER_PREFIX,?ERR_USERNOTINCHANNEL,<<" ">>,Target,<<" ">>,Channel,<<"\r\n">>]).
 -define(REPLY_NOTONCHANNEL,[?SERVER_PREFIX,?ERR_NOTONCHANNEL,<<" ">>,Channel,<<"\r\n">>]).
+-define(REPLY_LIST,[?SERVER_PREFIX,?RPL_LIST,<<" ">>,Channel,<<" :">>,Topic,<<"\r\n">>]).
 %% :efnet.portlane.se 311 jajaja jajaja ~mattiasli nl119-199-61.student.uu.se * :realname
 %% :efnet.portlane.se 312 jajaja jajaja efnet.portlane.se :Portlane EFnet Server (IPv4, IPv6 & SSL)
 %% :efnet.portlane.se 338 jajaja jajaja 130.243.199.61 :actually using host

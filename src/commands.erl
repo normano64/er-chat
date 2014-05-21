@@ -75,6 +75,10 @@ loop_other(Host,Socket,UserPid) ->
 	    {_,[{user,_,_,{_,Nick},_,_,_,_}]} = database:check_socket(Socket),
 	    names(Host,ChannelList,Socket,Nick),
 	    loop_other(Host,Socket,UserPid);
+	{list, [Channels]}->
+	    ChannelList = binary:split(Channels,<<",">>,[global]),
+	    list(Host,ChannelList,Socket),
+	    loop_other(Host, Socket, UserPid);
 	{unknown,Command} ->
             {_ServerIP,ServerHostent} = Host,
             gen_tcp:send(Socket,?REPLY_UNKNOWNCOMMAND),
@@ -327,7 +331,6 @@ kick({_ServerIp,ServerHostent},Socket,TargetChannel,Target,Comment)->
     {_,[{user,_,User,Nick,_,Hostent,_,ChannelList}]} = database:check_socket(Socket),
     case database:check_channel(TargetChannel) of
 	{_,[]} ->
-	    %%no such channel
 	    gen_tcp:send(Socket,?REPLY_NOSUCHNICK);
 	{_,[{channel, Channel,NickList,_}]} ->
 	    case lists:keysearch(Target,2,NickList) of
@@ -366,12 +369,17 @@ names({_ServerIp,ServerHostent},[Channel|Tail],Socket,Nick)->
 	    ok
     end,
     names({_ServerIp,ServerHostent},Tail,Socket, Nick).
+list(_Host,[],_Socket)->
+    ok;
+list({_ServerIp,ServerHostent},[Channel|Tail],Socket)->
+    {_,[{channel,_,_,Topic}]} = database:check_channel(Channel),
+    gen_tcp:send(Socket,?REPLY_LIST),
+    list({_ServerIp,ServerHostent},Tail,Socket).
 
-%% JOIN - ska alltid få in #, om den inte har det är det ingen kanal. Användare kan inte ha det som username eller nickname
-%% string:to_lower för alla compares med users och nick
-%% LIST - lists all channels
+%% LIST - lists all channels, 
 %% AWAY - makes user away
-%% PING/PONG
+%% PING/PONG - kolla så dom fungerar som dom ska
 %% OPER - make an users operator
 %% MODE - privliges, gives users or gives privilegies
+
 %% WHO - kanske
