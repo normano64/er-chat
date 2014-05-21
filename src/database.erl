@@ -1,25 +1,21 @@
+
 %% @author Sam, Mattias,Ludwing, Per och Tomas
-%% @doc Database
+%% @doc Database module implemented using mnesia
+-include_lib("eunit/include/eunit.hrl").
 -module(database).
 -compile(export_all).
--include_lib("eunit/include/eunit.hrl").
--include_lib("stdlib/include/qlc.hrl").
+-export_type([any/0]).
+
 -record(channel,{id, users, topic}).
--record(user,{socket, user, nick, server,hostent, realname, channel_list}). %%add channel list
+-record(user,{socket, user, nick, server,hostent, realname, channel_list}).
 -record(server,{id,servername,socket,active}). %%what additional parameters?
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%                                                                                           %
-%                               Database functions                                          %
-%                                                                                           %
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%-opaque database()::{atomic,ok}.
+%%-spec create_db()-> database().
 
-
-%%   @doc create_db,  This function starts the database nodes and creates two tables; user and channel.
-%%
-
-
+%% @doc Generated a new database
+-spec create_db() -> any().
 create_db()->
     ListNodes = [node()],
     mnesia:create_schema(ListNodes),
@@ -29,9 +25,8 @@ create_db()->
     mnesia:create_table(server,[{attributes, record_info(fields,server)},{disc_copies,ListNodes},{type,set}]).
 
 
-%% @doc	traverse_table_and_show, This function simply traverse the desired table in the database and prints it in the shell. 
-%%
 
+%%  in the database and prints it in the shell. 
 
 traverse_table_and_show(Table_name)->
     Iterator =  fun(Rec,_)->
@@ -62,7 +57,7 @@ stop()->
 
 
 
-%% @doc insert_user, This function inserts a user in the database.
+%%  insert_user, This function inserts a user in the database.
 %% It's parameters are the values of the columns in the table 
 %% The user can then be then later be found with it's unique socket
 %%
@@ -132,7 +127,7 @@ find_channellist({_,_,_,_,_,_,_,ChannelList})->
 
 
 
-%% @doc	insert_channel,This function creates a channel where the id is the parameter ChannelName with only one user (specified as in the parameter Nick)
+%% 	insert_channel,This function creates a channel where the id is the parameter ChannelName with only one user (specified as in the parameter Nick)
 %% The name of the topic is specified in the last parameter Topic
 delete_channel(Channel)->
     F = fun()->
@@ -157,7 +152,7 @@ update_list(#channel{id = _Id,users = UserList}, User)->
 
 
 
-%% @doc	join_channel, This function links a user to a channel by using a channel name, a nick name and a user id (Socket)
+%%  join_channel, This function links a user to a channel by using a channel name, a nick name and a user id (Socket)
 %%  In the channel list, the nick is added and in the user's channel list, the name of the channel is added
 %%
 join_channel(ChannelName, Nick, Socket)->
@@ -197,7 +192,7 @@ extract_nick([H|T], Nick,Ack) ->
 	    extract_nick(T,Nick,[H|Ack])
     end.
 
-%% @doc	part_channel, This function removes a user from a channel by using
+%% 	part_channel, This function removes a user from a channel by using
 %%  A ChannelName to identify the channel
 %%  A nickname to remove from it's nick-list
 %%  And finally, the socket of the user to remove the link (the channel has to be removed from the user's channel list)
@@ -253,7 +248,7 @@ get_next_channel(Tab,Key)->
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc	insert_server, This function adds a server where the id is the parameter ServerName. The Server can be found with it's unique socket.
+%% insert_server, This function adds a server where the id is the parameter ServerName. The Server can be found with it's unique socket.
 
 insert_server(Id,Servername,Socket,Active) ->
     Data = #server{id=Id,servername=Servername, socket=Socket, active=Active},
@@ -262,7 +257,7 @@ insert_server(Id,Servername,Socket,Active) ->
 	end,
     mnesia:transaction(F).
 
-%% @doc delete_server. This function deletes a server named in the parameter Server.
+%% delete_server. This function deletes a server named in the parameter Server.
 
 delete_server(Server)->
     F = fun()->
@@ -319,7 +314,7 @@ nick_test()->
 	delete_table_db(channel),
 	stop(),{test_passed,ok}].
 
-
+%% @hidden
 channel_test()->
     delete_table_db(user),
     delete_table_db(channel),
@@ -329,7 +324,7 @@ channel_test()->
     insert_user(<<"Socket2">>,<<"UserRandom">>,{"randomuser",<<"RandomUser">>},<<"Servername2">>,<<"Hostname2">>,<<"Realname2">>),
     insert_channel(<<"#Channel1">>,{<<"@">>,<<"NiCk1">>},<<"Topic">>),
     join_channel(<<"#Channel1">>,{<<"">>,<<"RandomUser">>},<<"Socket2">>),
-
+    
     [?assertMatch({_,[{channel,<<"#Channel1">>,[{<<"">>,<<"RandomUser">>},{<<"@">>,<<"NiCk1">>}],<<"Topic">>}]},check_channel(<<"#Channel1">>)),
      ?assertMatch({_,[]},check_channel(<<"NotExistingChannel">>)),
      ?assertMatch({atomic,_},part_channel(<<"#Channel1">>,<<"RandomUser">>,<<"Socket2">>)),

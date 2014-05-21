@@ -35,7 +35,7 @@ test: all
 	(cd ebin && erl -noinput -eval 'eunit:test({dir, "."}, [verbose]), init:stop()')
 
 doc: $(BEAM_FILES) 
-	erl -noshell -eval "edoc:files($(EDOC_SRC_LIST), [{dir, 'doc/html'}])" -s init stop
+	erl -noshell -eval "edoc:files($(EDOC_SRC_LIST), [{dir, 'doc/html'},{private,true}])" -s init stop
 
 clean:
 	rm -fr .#* *.dump
