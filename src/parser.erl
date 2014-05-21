@@ -65,11 +65,33 @@ loop(UserPid,OtherPid) ->
 		{_,<<"LIST">>,List}->
 		    OtherPid ! {list, List},
 		    loop(UserPid, OtherPid);
+%% SERVER COMMANDS
+%% NICK,JOIN och QUIT ska in på servercommands		
+%% Eftersom de har motsvarande på client calls så måste de skiljas på.
+	
+		{Prefix,<<"NJOIN">>, List} ->
+		    OtherPid ! {Prefix, njoin, List},
+		    loop(UserPid, OtherPid);
+		{_,<<"SERVER">>, List} ->         
+		    OtherPid ! {server, List},
+		    loop(UserPid, OtherPid);
+		{Prefix, <<"SQUIT">>, List}->
+		    OtherPid ! {Prefix, squit, List},
+		    loop(UserPid, OtherPid);
+		{Prefix, <<"SERVICE">>, LIST}->   
+		    OtherPid ! {Prefix, service, List},
+		    loop(UserPid, OtherPid);
+		{Prefix, <<"PASS">>, List}->
+		    OtherPid ! {Prefix, pass, List},
+		    loop(UserPid, OtherPid);
+		
 		{_,Command,_} ->
                     OtherPid ! {unknown,Command},
                     loop(UserPid,OtherPid)
                 end
     end.
+
+
 
 %% @doc The parse function takes a binary string and formates it to a tuple {Prefix/binary,Command/binary,[Parameters/binary]}.
 %%
