@@ -74,14 +74,14 @@ send_new_topic([{_Status,NickDb}|Tail],Channel,Topic,Nick,User,Hostent) ->
 
 send_kick_comment([],_Nick,_User,_Hostent,_Target,_TargetChannel, _Comment)->
     ok;
-send_kick_comment([{_Status,NickDb}|Tail], Nick, User, Hostent, Target, TargetChannel,Comment) ->
+send_kick_comment([{_Status,NickDb}|Tail],{Lnick,Nick}, User, Hostent, Target, TargetChannel,Comment) ->
     {_,[{user,SocketToSendTo,_,_,_,_,_,_}]} = database:check_nick(NickDb),
     gen_tcp:send(SocketToSendTo,?REPLY_KICK_COMMENT), 
-    send_kick_comment(Tail,Nick,User,Hostent,Target,TargetChannel,Comment).
+    send_kick_comment(Tail,{Lnick,Nick},User,Hostent,Target,TargetChannel,Comment).
 
 send_kick([],_Nick,_User,_Hostent,_Target,_TargetChannel)->
     ok;
-send_kick([{_Status,NickDb}|Tail],Nick,User,Hostent,Target,TargetChannel)->
+send_kick([{_Status,NickDb}|Tail],{Lnick,Nick},User,Hostent,Target,TargetChannel)->
     {_,[{user,SocketToSendTo,_,_,_,_,_,_}]} = database:check_nick(NickDb),
     gen_tcp:send(SocketToSendTo,?REPLY_KICK_NOCOMMENT), 
-    send_kick(Tail,Nick,User,Hostent,Target,TargetChannel).
+    send_kick(Tail,{Lnick,Nick},User,Hostent,Target,TargetChannel).

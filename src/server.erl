@@ -2,7 +2,7 @@
 -compile(export_all).
 -define(TIMEOUT,60000).
 
-start_server() ->
+start() ->
     Pid = spawn_link(fun() ->
 			     {ok, Listen} = gen_tcp:listen(6667, [binary,{packet, 0}, {active, false}, {reuseaddr, true}]),
 			     spawn(fun() -> acceptor(Listen) end),

@@ -341,10 +341,9 @@ kick({_ServerIp,ServerHostent},Socket,TargetChannel,Target,Comment)->
 				    database:part_channel(TargetChannel,Target,TargetSocket),
 				    if 
 					Comment == [] ->
-					    transmit:send_kick_comment(NickList,Nick,User,Hostent,Target,TargetChannel,Comment);
-					true ->
-					    
-					    transmit:send_kick(NickList,Nick,User,Hostent,Target,TargetChannel)
+					    transmit:send_kick(NickList,Nick,User,Hostent,Target,TargetChannel);
+					true ->					    
+					    transmit:send_kick_comment(NickList,Nick,User,Hostent,Target,TargetChannel,Comment)
 				    end;
 				_ ->
 				    gen_tcp:send(Socket,?REPLY_NOSUCHNICK)
