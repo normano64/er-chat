@@ -79,12 +79,13 @@ loop_other(Host,Socket,UserPid) ->
             {_,[{user,_,_,{_,Nick},_,_,_,_}]} = database:check_socket(Socket),
 	    who(Host,Socket,Nick,Channel),
 	    loop_other(Host,Socket,UserPid);
-	{list, [Channels]}->
-	    ChannelList = binary:split(Channels,<<",">>,[global]),
+	{list, List}->
 	    if
-		ChannelList == [] ->
+		List == [] orelse List == [<<>>] ->
 		    list(Host,Socket);
 		true ->
+		    Channels = database:get_head(List),
+		    ChannelList = binary:split(Channels,<<",">>,[global,trim]),
 		    list(Host,ChannelList,Socket)
 	    end,
 	    loop_other(Host, Socket, UserPid);

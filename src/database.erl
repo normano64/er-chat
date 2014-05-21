@@ -10,6 +10,8 @@
 -record(server,{id,servername,socket,active}). %%what additional parameters?
 
 %% @doc Generated a new database
+-spec create_db()->atom().
+
 create_db()->
     ListNodes = [node()],
     mnesia:create_schema(ListNodes),
@@ -19,6 +21,8 @@ create_db()->
     mnesia:create_table(server,[{attributes, record_info(fields,server)},{disc_copies,ListNodes},{type,set}]).
 
 %% @doc Prints out every element in Table from the database.
+-spec traverse_table_and_show(Table_name::atom())-> list().
+
 traverse_table_and_show(Table_name)->
     Iterator =  fun(Rec,_)->
                     io:format("~p~n",[Rec]),
@@ -33,6 +37,8 @@ traverse_table_and_show(Table_name)->
     end.
 
 %% @doc Deletes the table Table from the database
+-spec delete_table_db(Table::atom())-> atom().
+
 delete_table_db(Table)->
     mnesia:delete_table(Table).
 
