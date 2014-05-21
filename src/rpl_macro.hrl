@@ -9,6 +9,7 @@
 
 % Command replies 200-399
 -define(RPL_AWAY,<<"301">>). % <nick> :<away message>
+-define(RPL_LISTSTART,<<"321">>).
 -define(RPL_LIST,<<"322">>).
 -define(RPL_LISTENED,<<"323">>).
 %% Replies for whois
@@ -88,8 +89,9 @@
 -define(REPLY_USERNOTONTHATCHANNEL,[?SERVER_PREFIX,?ERR_USERNOTINCHANNEL,<<" ">>,Target,<<" ">>,Channel,<<"\r\n">>]).
 -define(REPLY_NOTONCHANNEL,[?SERVER_PREFIX,?ERR_NOTONCHANNEL,<<" ">>,Channel,<<"\r\n">>]).
 
--define(REPLY_LIST,[?SERVER_PREFIX,?RPL_LIST,<<" ">>,Channel,<<" :">>,Topic,<<"\r\n">>]).
--define(REPLY_LISTENED,[?SERVER_PREFIX,?RPL_LISTENED,<<" :">>,Info,<<"\r\n">>]).
+-define(REPLY_LISTSTART,[?SERVER_PREFIX,?RPL_LISTSTART,<<" ">>,Nick,<<" Channels :Users Name\r\n">>]).
+-define(REPLY_LIST,[?SERVER_PREFIX,?RPL_LIST,<<" ">>,Nick,<<" ">>,Channel,<<" ">>,Number,<<" :">>,Topic,<<"\r\n">>]).
+-define(REPLY_LISTENED,[?SERVER_PREFIX,?RPL_LISTENED,<<" ">>,Nick,<<" :">>,Info,<<"\r\n">>]).
 
 -define(REPLY_ENDOFWHO,[<<":">>,ServerHostent,<<" ">>,?RPL_ENDOFWHO,<<" ">>,Nick,<<" ">>, Channel, <<" :End of /WHO list\r\n">>]).
 %% Det är oklart vad h är i det här

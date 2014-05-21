@@ -80,13 +80,19 @@ loop_other(Host,Socket,UserPid) ->
 	    who(Host,Socket,Nick,Channel),
 	    loop_other(Host,Socket,UserPid);
 	{list, List}->
+	    {_,ServerHostent} = Host,
+	    {_,[{user,_,_,{_,Nick,_,_,_,_}}]} = database:check_socket(Socket),
+	    gen_tcp:send(Socket,?REPLY_LISTSTART),
 	    if
 		List == [] orelse List == [<<>>] ->
-		    list(Host,Socket);
+		    io:format("LIST tom~n"),
+		    list(Host,Socket,Nick);
 		true ->
 		    Channels = database:get_head(List),
+		    io:format("Channels = ~p, List = ~p~n",[Channels,List]),
 		    ChannelList = binary:split(Channels,<<",">>,[global,trim]),
-		    list(Host,ChannelList,Socket)
+		    io:format("List = ~p,~p~n",[ChannelList,List]),
+		    list(Host,ChannelList,Socket,Nick)
 	    end,
 	    loop_other(Host, Socket, UserPid);
 	{unknown,Command} ->
@@ -393,19 +399,20 @@ get_all_channels(ChannelKey,Ack) ->
     end.
     
 
-list(Host, Socket)->
+list(Host, Socket,Nick)->
     ChannelList = get_all_channels(),
-    list(Host,ChannelList,Socket).
+    io:format("CHANNELLIST = ~p~n",[ChannelList]),
+    list(Host,ChannelList,Socket,Nick).
 
-list({_ServerIp,ServerHostent},[],Socket)->
+list({_ServerIp,ServerHostent},[],Socket,Nick)->
     Info = <<"">>,
     gen_tcp:send(Socket,?REPLY_LISTENED);
-list({_ServerIp,ServerHostent},[Channel|Tail],Socket)->
-    {_,[{channel,_,_,Topic}]} = database:check_channel(Channel),
+list({_ServerIp,ServerHostent},[Channel|Tail],Socket,Nick)->
+    {_,[{channel,_,NickList,Topic}]} = database:check_channel(Channel),
+    Number = length(NickList),
     gen_tcp:send(Socket,?REPLY_LIST),
-    list({_ServerIp,ServerHostent},Tail,Socket).
+    list({_ServerIp,ServerHostent},Tail,Socket,Nick).
 
-%% LIST - lists all channels, 
 who({_ServerIp,ServerHostent},Socket,Nick,Target) ->
     case transmit:is_channel(Target) of
         true ->

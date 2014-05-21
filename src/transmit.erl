@@ -99,3 +99,10 @@ send_wholist([{Status,NickDb}|Tail],Socket,Nick,ServerHostent,Channel) ->
     {_,[{user,_,User,_,UserServer,UserHostent,RealName,_ChannelList}]} = database:check_nick(NickDb),
     gen_tcp:send(Socket,?REPLY_WHO),
     send_wholist(Tail,Socket,Nick,ServerHostent,Channel).
+
+send_list([],_Socket,_ServerHostent,_Channel,_Topic)->
+    ok;
+send_list([{_Status,Nick}|Tail],Socket,ServerHostent,Channel,Topic) ->
+    Number = length(Tail) + 1,
+    gen_tcp:send(Socket,?REPLY_LIST),
+    send_list(Tail,Socket,ServerHostent,Channel,Topic).
