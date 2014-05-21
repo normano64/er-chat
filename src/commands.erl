@@ -76,7 +76,8 @@ loop_other(Host,Socket,UserPid) ->
 	    names(Host,ChannelList,Socket,Nick),
 	    loop_other(Host,Socket,UserPid);
         {who,[Channel]} ->
-	    who(Host,Channel,Socket,Nick),
+            {_,[{user,_,_,{_,Nick},_,_,_,_}]} = database:check_socket(Socket),
+	    who(Host,Socket,Nick,Channel),
 	    loop_other(Host,Socket,UserPid);
 	{list, [Channels]}->
 	    ChannelList = binary:split(Channels,<<",">>,[global]),
@@ -404,18 +405,28 @@ list({_ServerIp,ServerHostent},[Channel|Tail],Socket)->
     list({_ServerIp,ServerHostent},Tail,Socket).
 
 %% LIST - lists all channels, 
-who({_ServerIp,ServerHostent},Socket,Nick,Channel) ->
-    case transmit:is_channel(Channel) of
+who({_ServerIp,ServerHostent},Socket,Nick,Target) ->
+    case transmit:is_channel(Target) of
         true ->
-            case database:check_channel() of
+            Channel = Target,
+            case database:check_channel(Channel) of
                 {_,[{channel,_,NickList,_}]} ->
-                    transmit:send_wholist(NickList,Socket,Nick);
-                    gen_tcp:send(Socket,?REPLY_ENDWHOIS);
+                    transmit:send_wholist(NickList,Socket,Nick,ServerHostent,Channel),
+                    gen_tcp:send(Socket,?REPLY_ENDOFWHO);
                 _ ->
-                    gen_tcp:send(Socket,?REPLY_ENDWHOIS)
+                    gen_tcp:send(Socket,?REPLY_ENDOFWHO)
             end;
         false ->
-            
+            case database:check_nick(Target) of
+                {_,[{user,_,User,{_,NickDb},UserServer,UserHostent,RealName,_ChannelList}]} ->
+                    Channel = Target,
+                    Status = <<"">>,
+                    gen_tcp:send(Socket,?REPLY_WHO),
+                    gen_tcp:send(Socket,?REPLY_ENDOFWHO);
+                _ ->
+                    Channel = <<"*">>,
+                    gen_tcp:send(Socket,?REPLY_ENDOFWHO)
+            end
     end.
 
 

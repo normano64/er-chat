@@ -93,9 +93,9 @@ send_kick([{_Status,NickDb}|Tail],{Lnick,Nick},User,Hostent,Target,TargetChannel
     gen_tcp:send(SocketToSendTo,?REPLY_KICK_NOCOMMENT), 
     send_kick(Tail,{Lnick,Nick},User,Hostent,Target,TargetChannel).
 
-send_wholist([],_Socket,_Nick) ->
+send_wholist([],_Socket,_Nick,_ServerHostent,_Channel) ->
     ok;
-send_wholist([{Status,NickDb}|Tail],Socket,Nick) ->
+send_wholist([{Status,NickDb}|Tail],Socket,Nick,ServerHostent,Channel) ->
     {_,[{user,_,User,_,UserServer,UserHostent,RealName,_ChannelList}]} = database:check_nick(NickDb),
     gen_tcp:send(Socket,?REPLY_WHO),
-    send_wholist(Tail,Socket,Nick).
+    send_wholist(Tail,Socket,Nick,ServerHostent,Channel).
