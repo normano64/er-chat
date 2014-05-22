@@ -437,7 +437,6 @@ who({_ServerIp,ServerHostent},Socket,Nick,Target) ->
             end
     end.
 
-
 %% JOIN - ska alltid få in #, om den inte har det är det ingen kanal. Användare kan inte ha det som username eller nickname
 %% string:to_lower för alla compares med users och nick
 %% LIST - lists all channels

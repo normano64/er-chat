@@ -222,22 +222,63 @@ get_next_channel(Tab,Key)->
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc This function adds a server where the id is the parameter ServerName, Socket is
+%% @doc This function adds a server where the id is the Servernumber, ergo the n:th server added, servername is the identifier, Socket is
 %%      the socket of the server and Active is if the server is active or not. The Server 
-%%      can be found with it's unique id.
-insert_server(ServerId,Servername,Socket,Active) ->
-    Data = #server{id=ServerId,servername=Servername, socket=Socket, active=Active},
+%%      can be found with it's unique name.
+insert_server(Servernumber,Servername,Socket,Active) ->
+    Data = #server{id=Servernumber,servername=Servername, socket=Socket, active=Active},
     F = fun() ->
 		mnesia:write(Data)
 	end,
     mnesia:transaction(F).
 
 %% @doc This function deletes a server names as Server in the server table from the database.
-delete_server(ServerId)->
+delete_server(Servername)->
     F = fun()->
-		mnesia:delete({server,ServerId})
+		mnesia:delete({server,Servername})
 	end,
     mnesia:transaction(F).
+
+%% @doc This function searches the database and returns true or false weather the Server exists.
+%% exists_server(Servername) ->
+%%     F = fun() ->
+%% 		mnesia:read({server,Servername})
+%% 	end,
+%%     A = mnesia:transaction(F),
+%%     case A of
+%% 	{_,[]} ->
+%% 	    false;
+%% 	_ ->
+%% 	    true
+%%     end.
+
+%% get_number_servernumber() ->
+%%     A = mnesia:table_info(server,size),
+%%     F = fun() ->
+%% 		mnesia:read({server,A})
+%% 	end,
+%%     C = mnesia:transaction(F),
+%%     case C of
+%% 	    {_,[]} ->
+%% 		      A;
+%% 		_ ->
+%% 		      get_number_servernumber(A+1)
+%% 	      end.
+
+%% get_number_servernumber(Incr) ->
+%%     F = fun() ->
+%% 		mnesia:read({server,Incr})
+%% 	end,
+%%     C = mnesia:transaction(F),
+%%     case C of
+%% 	    {_,[]} ->
+%% 		      Incr;
+%% 		_ ->
+%% 		      get_number_servernumber(Incr+1)
+%% 	      end.
+    
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
