@@ -18,10 +18,10 @@ init([])->
 
     %% Childspec
     io:format("innan childspec~n"),
-    {ok,{{simple_one_for_one, 60, 3600},
-	[{socket,
-	 {server2,start,[Socket,Host]},
-	 temporary,1000,worker,[server]}
+    {ok,{{one_for_one, 1, 3600},
+	[{socket_name,
+	 {server2,start_link,[Socket,Host]},
+	 permanent,1000,worker,[server2]}
 	]}}.
 
 start_socket()->

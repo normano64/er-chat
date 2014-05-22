@@ -1,4 +1,4 @@
-%% Authors: Sam Rönnlund(sam.ronnlund.6971@student.uu.se) & Tomas Wallin(tomas.wallin.XXXX@student.uu.se).
+%% Authors: Sam Rönnlund(sam.ronnlund.6971@student.uu.se) & Tomas Wallin(tomas.wallin.XXXX@student.uu.se).0
 
 -module(super).
 -behaviour(supervisor).
@@ -9,8 +9,6 @@
 
 start_link()->
     supervisor:start_link({local,?MODULE},?MODULE, []).
-
-
 
 init(_Res)->
     io:format("Starting super (~w) ~n",[self()]),

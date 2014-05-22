@@ -1,22 +1,27 @@
 -module(server2).
--compile(export_all).
+%%-compile(export_all).
 -behaviour(gen_server).
--export([init/1,handle_cast/2,handle_call/3,handle_info/2,start/1,terminate/2,code_change/3]).
-start(List)->
+-export([init/1,handle_cast/2,handle_call/3,handle_info/2,start_link/2,start_link/1,start_link/0,terminate/2,code_change/3]).
+start_link(Socket,Host)->
+    List = [Socket,Host],
     io:format("INNAN INIT :S:S:S:S~n"),
-    gen_server:start_link(?MODULE,List,[]).
+    gen_server:start_link({local,whatever},?MODULE,List,[]).
+start_link(_)->
+    io:formar("cpcpcpcpCPCPCPCPCpcpcpcPCPCPCP~n").
+start_link()->
+    io:formar("cpcpcpcpCPCPCPCPCpcpcpcPCPCPCP~n").
 
 init(List)->
     [Socket,Host] = List,
-    _Pid = self(),
+    Pid = self(),
     io:format("Innan handle cast~n"),
-    gen_server:cast({Socket,Host},accept),
+    gen_server:cast(Pid,accept),
     {ok,{Socket,Host}}.
 
 %% Asynchronus
 handle_cast(accept,{Socket,Host})->
     %% acceptSocket for user, Socket for server
-    io:format("HANDLE call accept~n"),
+    io:format("HANDLE cast accept,Socket = ~p,Host = ~p~n",[Socket,Host]),
     {ok, AcceptSocket} = gen_tcp:accept(Socket),
 
     UserPid = spawn_link(fun()-> commands:loop_user(Host,Socket) end),
@@ -25,23 +30,29 @@ handle_cast(accept,{Socket,Host})->
 
     supervisor:start_socket(),
     Receiver = gen_tcp:recv(AcceptSocket,0,1000),
-    gen_server:cast(Receiver,{AcceptSocket,Host,ParserPid,0}),
-    {noreply,state};
+    Pid = self(),
+    gen_server:cast(Pid,Receiver),
+    {noreply,{AcceptSocket,Host,ParserPid,0}};
 handle_cast({ok,Message},{AcceptSocket,Host,ParsePid,_Timeout}) ->
     io:format("~p: ~p~n", [AcceptSocket, Message]),
     CommandList = binary:split(Message,<<"\n">>, [trim,global]),
     send_messages(ParsePid, CommandList),
+    Pid = self(),
     Receiver = gen_tcp:recv(AcceptSocket,0,1000),
-    gen_server:cast(Receiver,{AcceptSocket,Host,ParsePid,0});
+    gen_server:cast(Pid,Receiver),
+    {ok,{AcceptSocket,Host,ParsePid,0}};
 handle_cast({error,timeout},{AcceptSocket,Host,ParsePid,Timeout}) ->
     case Timeout of
 	1 ->
 	    io:format("~p closed, reason: timeout~n",[AcceptSocket]),
-	    commands:quit(<<"client timeout">>, Host, AcceptSocket);
+	    commands:quit(<<"client timeout">>, Host, AcceptSocket),
+	    {stop,normal,ok,whatever};
 	_ ->
 	    commands:ping(Host, AcceptSocket),
+	    Pid = self(),
 	    Receiver = gen_tcp:recv(AcceptSocket,0,1000),
-	    gen_server:cast(Receiver,{AcceptSocket,Host,ParsePid,0})
+	    gen_server:cast(Pid,Receiver),
+	    {ok,{AcceptSocket,Host,ParsePid,0}}
 	end;
 handle_cast({error,Reason},{Socket,Host,_ParsePid,_Timeout}) ->
     io:format("~p closed, reason: ~p~n", [Socket, Reason]),
