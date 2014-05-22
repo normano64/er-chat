@@ -1,11 +1,4 @@
 %% Authors: Sam Rönnlund(sam.ronnlund.6971@student.uu.se) & Tomas Wallin(tomas.wallin.XXXX@student.uu.se).
-%%
-%%
-%%
-%%
-%%
-
-
 
 -module(super).
 -behaviour(supervisor).
