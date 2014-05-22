@@ -50,8 +50,8 @@
 %%                                                                                     %%
 %%                                                                                     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
--define(REPLY_WELCOME,[<<":">>,ServerHostent,<<" ">>,?RPL_WELCOME,<<" ">>,Nick,<<" :Welcome to the Internet Relay Network ">>,Nick,<<"\r\n">>]).
--define(REPLY_YOURHOST,[<<":">>,ServerHostent,<<" ">>,?RPL_YOURHOST,<<" ">>,Nick,<<" :Your host is ">>,ServerHostent,<<"[">>,ServerIP,<<"/">>,list_to_binary(integer_to_list(Port)),<<"],running version er-chat-alpha-01\r\n">>]).
+-define(REPLY_WELCOME,[<<":">>,ServerHostent,<<" ">>,?RPL_WELCOME,<<" ">>,Nick,<<" :Welcome to the er-chat Internet Relay Chat Network ">>,Nick,<<"\r\n">>]).
+-define(REPLY_YOURHOST,[<<":">>,ServerHostent,<<" ">>,?RPL_YOURHOST,<<" ">>,Nick,<<" :Your host is ">>,ServerHostent,<<"[">>,ServerIP,<<"/">>,list_to_binary(integer_to_list(Port)),<<"], running version er-chat-alpha-01\r\n">>]).
 -define(REPLY_ALREADYREGISTERD,[<<":">>,ServerHostent,<<" ">>,?ERR_ALREADYREGISTRED,<<" ">>,Nick,<<" :You may not reregister\r\n">>]).
 -define(REPLY_UPDATENICK,[<<":">>,OldNick,<<"!">>,User,<<"@">>,Hostent,<<" NICK :">>,Nick,<<"\r\n">>]).
 -define(REPLY_NICKNAMEINUSE,[<<":">>,ServerHostent,<<" ">>,?ERR_NICKNAMEINUSE,<<" * ">>,Nick,<<" :Nickname is already in use.\r\n">>]).
