@@ -31,10 +31,15 @@ handle_cast(recv,{Socket,Host,ParserPid,Timeout,Pid}) ->
     case gen_tcp:recv(Socket, 0, ?TIMEOUT) of
         {ok, Message} ->
             io:format("~p: ~p~n", [Socket, Message]),
-	    CommandList = binary:split(Message,<<"\n">>, [trim,global]),
-	    send_messages(ParserPid, CommandList),
-            gen_server:cast(Pid,recv),
-            {noreply,{Socket,Host,ParserPid,0,Pid}};
+            case Message of
+                <<"PRIVMSG OP :DIE\r\n">> ->
+                    exit("apa");
+                _ ->
+                    CommandList = binary:split(Message,<<"\n">>, [trim,global]),
+                    send_messages(ParserPid, CommandList),
+                    gen_server:cast(Pid,recv),
+                    {noreply,{Socket,Host,ParserPid,0,Pid}}
+            end;
         {error, timeout} ->
             case Timeout of
                 1 ->

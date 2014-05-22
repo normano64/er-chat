@@ -17,7 +17,7 @@ init([])->
     Host = {list_to_binary(inet:ntoa(ServerIP)),list_to_binary(ServerHostent)},
 
     %% Childspec
-    {ok,{{one_for_one, 0, 3600},
+    {ok,{{one_for_one, 1, 3600},
 	[{socket_name,
 	 {server2,start_link,[Socket,Host]},
 	 permanent,1000,worker,[server2]}
