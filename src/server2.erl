@@ -1,37 +1,30 @@
 -module(server2).
 %%-compile(export_all).
 -behaviour(gen_server).
--export([init/1,handle_cast/2,handle_call/3,handle_info/2,start_link/2,start_link/1,start_link/0,terminate/2,code_change/3]).
+-export([init/1,handle_cast/2,handle_call/3,handle_info/2,start_link/2,terminate/2,code_change/3]).
 -define(TIMEOUT,60000).
 
 start_link(Socket,Host)->
     List = [Socket,Host],
-    io:format("INNAN INIT :S:S:S:S~n"),
     gen_server:start_link({local,whatever},?MODULE,List,[]).
-start_link(_)->
-    io:formar("cpcpcpcpCPCPCPCPCpcpcpcPCPCPCP~n").
-start_link()->
-    io:formar("cpcpcpcpCPCPCPCPCpcpcpcPCPCPCP~n").
 
 init(List)->
     [Socket,Host] = List,
     Pid = self(),
-    io:format("Innan handle cast~n"),
     gen_server:cast(Pid,accept),
     {ok,{Socket,Host}}.
 
 %% Asynchronus
 handle_cast(accept,{Socket,Host})->
     %% acceptSocket for user, Socket for server
-    io:format("HANDLE cast accept,Socket = ~p,Host = ~p~n",[Socket,Host]),
     %%{ok, AcceptSocket} = gen_tcp:accept(Socket),
 
     UserPid = spawn_link(fun()-> commands:loop_user(Host,Socket) end),
     OtherPid = spawn_link(fun()-> commands:loop_other(Host,Socket, UserPid) end),
     ParserPid = spawn_link(fun()-> parser:loop(UserPid,OtherPid) end),
 
-    server_sup:start_socket(),
     Pid = self(),
+    gen_server:cast(Pid,recv),
     {noreply,{Socket,Host,ParserPid,0,Pid}};
 
 handle_cast(recv,{Socket,Host,ParserPid,Timeout,Pid}) ->
@@ -41,7 +34,7 @@ handle_cast(recv,{Socket,Host,ParserPid,Timeout,Pid}) ->
 	    CommandList = binary:split(Message,<<"\n">>, [trim,global]),
 	    send_messages(ParserPid, CommandList),
             gen_server:cast(Pid,recv),
-            {ok,{Socket,Host,ParserPid,0,Pid}};
+            {noreply,{Socket,Host,ParserPid,0,Pid}};
         {error, timeout} ->
             case Timeout of
                 1 ->
@@ -50,7 +43,7 @@ handle_cast(recv,{Socket,Host,ParserPid,Timeout,Pid}) ->
                 _ ->
                     commands:ping(Host, Socket),
                     gen_server:cast(Pid,recv),
-                    {ok,{Socket,Host,ParserPid,1,Pid}}
+                    {noreply,{Socket,Host,ParserPid,1,Pid}}
             end;
         {error, Reason} ->
             io:format("~p closed, reason: ~p~n", [Socket, Reason]),
