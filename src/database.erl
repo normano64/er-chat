@@ -7,7 +7,7 @@
 -export_type([any/0]).
 -record(channel,{id, users, topic}).
 -record(user,{socket, user, nick, server,hostent, realname, channel_list}).
--record(server,{id,servername,socket,active}). %%what additional parameters?
+-record(server,{id,servername,socket,active}). 
 
 %% @doc Generated a new database
 -spec create_db()->atom().
