@@ -29,9 +29,9 @@ channel_change_nick([H|T],NewNick,UserList,Socket) ->
 send_new_nick([],_OldNick,_NewNick,_User,_Hostent) ->
     ok;
 send_new_nick([SendToNick|T],OldNick,Nick,User,Hostent) ->
-    io:format("DAFUUUUQ ~n"),
+    %%io:format("DAFUUUUQ ~n"),
     {_,[{user,Socket,_,_,_Server,_,_RealName,_ChannelList}]} = database:check_nick(SendToNick),
-    io:format("H*R VI FAILAR?!?! ~n"),
+    %%io:format("HAR VI FAILAR?!?! ~n"),
     gen_tcp:send(Socket,?REPLY_UPDATENICK),
     send_new_nick(T,OldNick,Nick,User,Hostent).
 
@@ -47,7 +47,7 @@ convert_nicklist([{Status,Nick}|T],Ack) ->
 send_join_replies([],_Channel,_Nick,_User,_Hostent) ->
     ok;
 send_join_replies([{_Status,NickDb}|T],Channel,Nick,User,Hostent) ->
-    io:format("~p:~p:~p:~p~n",[Channel,Nick,User,Hostent]),
+    %%io:format("~p:~p:~p:~p~n",[Channel,Nick,User,Hostent]),
     {_,[{user,SocketToSendTo,_,_,_,_,_,_}]} = database:check_nick(NickDb),
     gen_tcp:send(SocketToSendTo,?REPLY_JOINCHANNEL),
     send_join_replies(T,Channel,Nick,User,Hostent).

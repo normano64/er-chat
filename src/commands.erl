@@ -81,17 +81,17 @@ loop_other(Host,Socket,UserPid) ->
 	    loop_other(Host,Socket,UserPid);
 	{list, List}->
 	    {_,ServerHostent} = Host,
-	    {_,[{user,_,_,{_,Nick,_,_,_,_}}]} = database:check_socket(Socket),
+	    {_,[{user,_,_,{_,Nick},_,_,_,_}]} = database:check_socket(Socket),
 	    gen_tcp:send(Socket,?REPLY_LISTSTART),
 	    if
 		List == [] orelse List == [<<>>] ->
-		    io:format("LIST tom~n"),
+		    %%io:format("LIST tom~n"),
 		    list(Host,Socket,Nick);
 		true ->
 		    Channels = database:get_head(List),
-		    io:format("Channels = ~p, List = ~p~n",[Channels,List]),
+		    %%io:format("Channels = ~p, List = ~p~n",[Channels,List]),
 		    ChannelList = binary:split(Channels,<<",">>,[global,trim]),
-		    io:format("List = ~p,~p~n",[ChannelList,List]),
+		    %%io:format("List = ~p,~p~n",[ChannelList,List]),
 		    list(Host,ChannelList,Socket,Nick)
 	    end,
 	    loop_other(Host, Socket, UserPid);
@@ -143,7 +143,7 @@ user(User,RealName,{ServerIP,ServerHostent},Socket,nick_ok) ->
     end.
 
 nick(Nick,UserPid,{_ServerIP,ServerHostent},Socket) ->
-    io:format("nick Nick = ~p~n",[Nick]),
+    %%io:format("nick Nick = ~p~n",[Nick]),
     case database:check_nick(Nick) of
         {_,[]} ->
             case database:check_socket(Socket) of
@@ -269,7 +269,7 @@ part([Channel|Tail],Message,{ServerIP,ServerHostent},Socket) ->
 
 whois(TargetList,{_ServerIp, ServerHostent},Socket) ->
     Target = lists:nth(1,TargetList),
-    io:format("WHOIS::: ~p~n",[Target]),
+    %%io:format("WHOIS::: ~p~n",[Target]),
     {_,[{user,_,_,{_,Nick},_,_,_,_ChannelList}]} = database:check_socket(Socket),
     case database:check_nick(Target) of
 	{_,[{user,_,_TargetUser,_,UserServer,UserHostent,TargetRealName,_ChannelList}]} ->
@@ -311,7 +311,7 @@ set_topic([Channel|Tail],Topic,{_ServerIp, ServerHostent},Socket) ->
                     database:set_topic(Channel,Topic),
                     transmit:send_new_topic(NickList,Channel,Topic,Nick,User,Hostent);
                 _ ->
-                    io:format("~p~n",[lists:keysearch(Nick,2,NickList)]),
+                    %%io:format("~p~n",[lists:keysearch(Nick,2,NickList)]),
                     gen_tcp:send(Socket,?REPLY_NOTCHANOP)
             end;
         false ->
@@ -401,7 +401,7 @@ get_all_channels(ChannelKey,Ack) ->
 
 list(Host, Socket,Nick)->
     ChannelList = get_all_channels(),
-    io:format("CHANNELLIST = ~p~n",[ChannelList]),
+    %%io:format("CHANNELLIST = ~p~n",[ChannelList]),
     list(Host,ChannelList,Socket,Nick).
 
 list({_ServerIp,ServerHostent},[],Socket,Nick)->
