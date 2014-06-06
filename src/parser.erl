@@ -1,8 +1,8 @@
+%% coding: latin-1
 %% @author Sam, Mattias, Ludwing, Per och Tomas
-%% @doc Parser
+%% @doc Parser module
 -module(parser).
 -include_lib("eunit/include/eunit.hrl").
-%%-compile(export_all).
 -export([parse/1,loop/2]).
 -define(SLASHR,13).
 -define(SPACE,32).
@@ -14,6 +14,7 @@
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% @doc This is the main function used to deceipher an incomming message
 loop(UserPid,OtherPid) ->
     receive {ok,Message} ->
             case parse(Message) of
@@ -99,11 +100,9 @@ loop(UserPid,OtherPid) ->
 %% parse(<<"USER GUEST 0 * :Ronald Mcdonald">>)
 %% {noprefix,<<"USER">>,[<<"guest">>,<<"0">>,<<"*">>,<<":Ronald Mcdonald">>]}
 %%
-%%WEAKNESSES OF PARSE
-%%It cannot handle multiple spaces following eachother and will then generate empty parameters <<>>.
+%%BEHAVIOURS OF PARSE
 %%If a colon isn't preceded by a space it will not be placed in Colonpart.
 %%Everything after " :" will be placed in the Colonpart and will not acted upon anymore,even another " :".
-%%Handling of prefix is not complete and bugfree.
 
 parse(Bitstring) ->
 %%Remove Carriage Return.
@@ -142,8 +141,6 @@ parse(Bitstring) ->
     [Command|Parameters] = Bitlist_complete,
     {Prefix,Command,Parameters}.
 
-%% [Bitstring_noColon|Colonpart] = binary:split(Bitstring_noPrefix,<<?SPACE,?COLON>>,[global]),
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                                                                                           %
@@ -151,6 +148,7 @@ parse(Bitstring) ->
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% @hidden
 parser_test() ->
     Bin1 = <<72,?SLASHR,69,?SLASHR,76,?SLASHR,76,?SLASHR,79>>,
     Bin2 = <<72,?SPACE,69,?SPACE,76,?SPACE,76,?SPACE,79>>,
