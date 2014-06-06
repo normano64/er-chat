@@ -1,7 +1,11 @@
+%% @author Sam, Mattias, Ludwing, Per och Tomas
+%% @doc Server module, handles the TCP connections.
 -module(server).
 -compile(export_all).
 -define(TIMEOUT,60000).
 
+%% @doc Starts the server and begin to listen for new TCP connections on port 6667.
+%%      Spawns the acceptor function when a new connection connects.
 start() ->
     Pid = spawn_link(fun() ->
 			     {ok, Listen} = gen_tcp:listen(6667, [binary,{packet, 0}, {active, false}, {reuseaddr, true}]),
@@ -10,6 +14,8 @@ start() ->
 		     end),
     {ok, Pid}.
 
+%% @doc Accepts the socket and spawns a new listener.
+%%      Spawns User, Commands and Parser actors and continues to do_recv/4 afterwards.
 acceptor(ListenSocket) ->
     {ok, Socket} = gen_tcp:accept(ListenSocket),
     spawn(fun() -> acceptor(ListenSocket) end),
@@ -32,6 +38,8 @@ acceptor(ListenSocket) ->
     
     do_recv(Socket, 0, ParserPid, Host).
 
+%% @doc Receives all TCP message and forwards them to send_messages/2.
+%%      Handles TCP connection errors and closes the connection when it should.
 do_recv(Socket, Timeout, ParserPid, Host) ->
     case gen_tcp:recv(Socket, 0, ?TIMEOUT) of
         {ok, Message} ->
@@ -54,6 +62,7 @@ do_recv(Socket, Timeout, ParserPid, Host) ->
             exit(Reason)
     end.
 
+%% @doc Sends the incomming message to the Parser actor.
 send_messages(_,[])->
     [];
 send_messages(ParserPid,[H|T]) ->

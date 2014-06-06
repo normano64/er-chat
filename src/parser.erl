@@ -1,6 +1,6 @@
 %% coding: latin-1
 %% @author Sam, Mattias, Ludwing, Per och Tomas
-%% @doc Parser module
+%% @doc Parser module, parses the incomming messages.
 -module(parser).
 -include_lib("eunit/include/eunit.hrl").
 -export([parse/1,loop/2]).
@@ -14,7 +14,7 @@
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc This is the main function used to deceipher an incomming message
+%% @doc This is the main function used to deceipher an incomming message.
 loop(UserPid,OtherPid) ->
     receive {ok,Message} ->
             case parse(Message) of
@@ -95,14 +95,8 @@ loop(UserPid,OtherPid) ->
 
 
 %% @doc The parse function takes a binary string and formates it to a tuple {Prefix/binary,Command/binary,[Parameters/binary]}.
-%%
-%%== Example ==
-%% parse(<<"USER GUEST 0 * :Ronald Mcdonald">>)
-%% {noprefix,<<"USER">>,[<<"guest">>,<<"0">>,<<"*">>,<<":Ronald Mcdonald">>]}
-%%
-%%BEHAVIOURS OF PARSE
-%%If a colon isn't preceded by a space it will not be placed in Colonpart.
-%%Everything after " :" will be placed in the Colonpart and will not acted upon anymore,even another " :".
+%%      If a colon isn't preceded by a space it will not be placed in Colonpart.
+%%      Everything after " :" will be placed in the Colonpart and will not acted upon anymore,even another " :".
 
 parse(Bitstring) ->
 %%Remove Carriage Return.
