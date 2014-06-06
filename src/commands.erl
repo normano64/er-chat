@@ -1,24 +1,29 @@
+%% @author Sam, Mattias, Ludwing, Per och Tomas
+%% @doc Commands module, handles IRC-commands.
 -module(commands).
 -compile(export_all).
 -include("rpl_macro.hrl").
 
+%% @doc Handles the registration of the user on the server.
+%%      Proceeds to user/4 or user/5 depending on whether nick have been accepted.
 loop_user(Host,Socket) ->
     receive
         {user,[User,_Steps,_Star,RealName]} ->
             user(User,RealName,Host,Socket),
-            %%loop_user(Host,Socket);
             exit(normal);
         {nick_ok} ->
             receive
                 {user,[User,_Steps,_Star,RealName]} ->
                     user(User,RealName,Host,Socket,nick_ok)
             end,
-            %%loop_user(Host,Socket);
             exit(normal);
         Error ->
             io:format("Error user:~p~n",[Error])
     end.
 
+%% @doc Handles the messages from parser.
+%%      Proceeds the message to the proper function to handle the IRC-command.
+%%      Replies with an error if it's an unknown command.
 loop_other(Host,Socket,UserPid) ->
     receive
         {nick,[Nick]} ->
@@ -85,13 +90,10 @@ loop_other(Host,Socket,UserPid) ->
 	    gen_tcp:send(Socket,?REPLY_LISTSTART),
 	    if
 		List == [] orelse List == [<<>>] ->
-		    %%io:format("LIST tom~n"),
 		    list(Host,Socket,Nick);
 		true ->
 		    Channels = database:get_head(List),
-		    %%io:format("Channels = ~p, List = ~p~n",[Channels,List]),
 		    ChannelList = binary:split(Channels,<<",">>,[global,trim]),
-		    %%io:format("List = ~p,~p~n",[ChannelList,List]),
 		    list(Host,ChannelList,Socket,Nick)
 	    end,
 	    loop_other(Host, Socket, UserPid);
@@ -104,6 +106,9 @@ loop_other(Host,Socket,UserPid) ->
             io:format("Error nick:~p~n",[Error])
     end.
 
+%% @doc Register the user to server.
+%%      Waits for {nick_ok} from nick/4 before registration.
+%%      Replies with an error to the user if it's already registerd.
 user(User,RealName,{ServerIP,ServerHostent},Socket) ->
     case database:check_socket(Socket) of
         {_,UserTuple} when is_list(UserTuple) orelse element(2,UserTuple) == empty ->
@@ -124,6 +129,9 @@ user(User,RealName,{ServerIP,ServerHostent},Socket) ->
             {_,{_,Nick}} = database:get_nick(Socket),
             gen_tcp:send(Socket,?REPLY_ALREADYREGISTERD)
     end.
+
+%% @doc Register the user to server.
+%%      Replies with an error to the user if it's already registerd.
 user(User,RealName,{ServerIP,ServerHostent},Socket,nick_ok) ->
     case database:check_socket(Socket) of
         {_,UserTuple} when is_list(UserTuple) orelse element(2,UserTuple) == empty ->
@@ -142,8 +150,10 @@ user(User,RealName,{ServerIP,ServerHostent},Socket,nick_ok) ->
             gen_tcp:send(Socket,?REPLY_ALREADYREGISTERD)
     end.
 
+%% @doc Adds the nick to the database if it doesn't exist.
+%%      Replies with an error if nick in use.
+%%      Sends {nick_ok} to loop_user/2 if successful.
 nick(Nick,UserPid,{_ServerIP,ServerHostent},Socket) ->
-    %%io:format("nick Nick = ~p~n",[Nick]),
     case database:check_nick(Nick) of
         {_,[]} ->
             case database:check_socket(Socket) of
@@ -174,14 +184,17 @@ nick(Nick,UserPid,{_ServerIP,ServerHostent},Socket) ->
             gen_tcp:send(Socket,?REPLY_NICKNAMEINUSE)
     end.
 
+%% @doc Sends a PING to the user to see if it still active.
 ping({_ServerIP,ServerHostent},Socket) ->
     gen_tcp:send(Socket,?REPLY_PING).
 
+%% @doc Replies to a PING with a PONG to tell that it received the PING.
 pong({_ServerIP,ServerHostent},_Server,Socket) ->
     {_,{_,Nick}} = database:get_nick(Socket),
     gen_tcp:send(Socket,?REPLY_PONG).
 
-
+%% @doc Deregister the user from the server.
+%%      Sends a PART to all joined channels.
 quit(Message,{_ServerIP,_ServerHostent},Socket) ->
     case database:check_socket(Socket) of
         {_,[{user,_,User,{_,Nick},_,Hostent,_,Channels}]} ->
@@ -192,6 +205,8 @@ quit(Message,{_ServerIP,_ServerHostent},Socket) ->
             already_closed
     end.
 
+%% @doc Adds the user to the channel/channels.
+%%      Will create the channel if it doesn't exist and give Admin MODE to the user.
 join([],{_ServerIP,_ServerHostent},_Socket) ->
     ok;
 join([Channel|Tail],{ServerIP,ServerHostent},Socket) ->
@@ -209,7 +224,6 @@ join([Channel|Tail],{ServerIP,ServerHostent},Socket) ->
                             if
                                 Topic == <<"">> ->
                                     ok;
-                                %%gen_tcp:send(Socket,?REPLY_JOINNOTOPIC);
                                 true ->
                                     gen_tcp:send(Socket,?REPLY_JOINTOPIC)
                             end,
@@ -230,6 +244,8 @@ join([Channel|Tail],{ServerIP,ServerHostent},Socket) ->
     end,
     join(Tail,{ServerIP,ServerHostent},Socket).
 
+%% @doc Sends PRIVMSG to Target.
+%%      Will send to channel if Target begins with #, else user.
 privmsg(Target,Message,{_ServerIP,ServerHostent},Socket) ->
     {_,[{user,_,User,{_,Nick},_,Hostent,_,_}]} = database:check_socket(Socket),
     case binary:first(Target) of
@@ -249,6 +265,7 @@ privmsg(Target,Message,{_ServerIP,ServerHostent},Socket) ->
             end
     end.
 
+%% @doc Sends a PART to all joined user of the channel and deregister the user from the channel.
 part([],_Message,{_ServerIP,_ServerHostent},_Socket) ->
     ok;
 part([Channel|Tail],Message,{ServerIP,ServerHostent},Socket) ->
@@ -267,9 +284,10 @@ part([Channel|Tail],Message,{ServerIP,ServerHostent},Socket) ->
     end,
     part(Tail,Message,{ServerIP,ServerHostent},Socket).
 
+%% @doc Replies with who the Target/Targets is/are.
+%%      Replies with a no suck nick if no matching user or channel.
 whois(TargetList,{_ServerIp, ServerHostent},Socket) ->
     Target = lists:nth(1,TargetList),
-    %%io:format("WHOIS::: ~p~n",[Target]),
     {_,[{user,_,_,{_,Nick},_,_,_,_ChannelList}]} = database:check_socket(Socket),
     case database:check_nick(Target) of
 	{_,[{user,_,_TargetUser,_,UserServer,UserHostent,TargetRealName,_ChannelList}]} ->
@@ -281,6 +299,7 @@ whois(TargetList,{_ServerIp, ServerHostent},Socket) ->
 	    gen_tcp:send(Socket,?REPLY_ENDOFWHOIS)
     end.
 
+%% @doc Replies with the TOPIC of the channel/channels.
 get_topic([],_Host,_Socket) ->
     ok;
 get_topic([Channel|Tail],{_ServerIp, ServerHostent},Socket) ->
@@ -299,6 +318,7 @@ get_topic([Channel|Tail],{_ServerIp, ServerHostent},Socket) ->
     end,
     get_topic(Tail,{_ServerIp, ServerHostent},Socket).
 
+%% @doc Sets the TOPIC of the channel/channels if the user have Admin MODE.
 set_topic([],_Topic,_Host,_Socket) ->
     ok;
 set_topic([Channel|Tail],Topic,{_ServerIp, ServerHostent},Socket) ->
@@ -311,7 +331,6 @@ set_topic([Channel|Tail],Topic,{_ServerIp, ServerHostent},Socket) ->
                     database:set_topic(Channel,Topic),
                     transmit:send_new_topic(NickList,Channel,Topic,Nick,User,Hostent);
                 _ ->
-                    %%io:format("~p~n",[lists:keysearch(Nick,2,NickList)]),
                     gen_tcp:send(Socket,?REPLY_NOTCHANOP)
             end;
         false ->
@@ -319,7 +338,9 @@ set_topic([Channel|Tail],Topic,{_ServerIp, ServerHostent},Socket) ->
     end,
     set_topic(Tail,Topic,{_ServerIp, ServerHostent},Socket).
 
-
+%% @doc Sends an invitation to the user to join the channel.
+%%      Replies with user already in channel if the Target is already in the channel.
+%%      Replies with no such nick if the Target doesn't exist.
 invite({_ServerIp,ServerHostent}, Socket, Target, Channel)->
     {_,[{user,_,User,{_,Nick},_,Hostent,_,_}]} = database:check_socket(Socket),
     case database:check_channel(Channel) of  
@@ -340,9 +361,11 @@ invite({_ServerIp,ServerHostent}, Socket, Target, Channel)->
 	    end
     end.
 
+%% @doc TBI, will take care of the MODE IRC-command.
 mode({_ServerIp,_ServerHostent},_Socket,_List)->
     ok.
 
+%% @doc Kicks the Target from the channel.
 kick({_ServerIp,ServerHostent},Socket,TargetChannel,Target,Comment)->
     {_,[{user,_,User,Nick,_,Hostent,_,ChannelList}]} = database:check_socket(Socket),
     case database:check_channel(TargetChannel) of
@@ -373,6 +396,7 @@ kick({_ServerIp,ServerHostent},Socket,TargetChannel,Target,Comment)->
 	    end
     end.
 
+%% @doc Replies with those who are registered to the channel.
 names(_Host,[],_Socket,_Nick)->
     ok;
 names({_ServerIp,ServerHostent},[Channel|Tail],Socket,Nick)->
@@ -386,9 +410,11 @@ names({_ServerIp,ServerHostent},[Channel|Tail],Socket,Nick)->
     end,
     names({_ServerIp,ServerHostent},Tail,Socket, Nick).
 
+%% @hidden
 get_all_channels() ->
     {_,Channel} = database:get_first_channel(channel),
     get_all_channels(Channel,[Channel]).
+%% @hidden
 get_all_channels(ChannelKey,Ack) ->
     {_,Channel} = database:get_next_channel(channel,ChannelKey),
     if 
@@ -398,12 +424,12 @@ get_all_channels(ChannelKey,Ack) ->
 	    get_all_channels(Channel,[Channel|Ack])
     end.
     
-
+%% @doc Replies with all known channels
 list(Host, Socket,Nick)->
     ChannelList = get_all_channels(),
-    %%io:format("CHANNELLIST = ~p~n",[ChannelList]),
     list(Host,ChannelList,Socket,Nick).
 
+%% @hidden
 list({_ServerIp,ServerHostent},[],Socket,Nick)->
     Info = <<"">>,
     gen_tcp:send(Socket,?REPLY_LISTENED);
@@ -413,6 +439,7 @@ list({_ServerIp,ServerHostent},[Channel|Tail],Socket,Nick)->
     gen_tcp:send(Socket,?REPLY_LIST),
     list({_ServerIp,ServerHostent},Tail,Socket,Nick).
 
+%% @doc Replies with who the Target is.
 who({_ServerIp,ServerHostent},Socket,Nick,Target) ->
     case transmit:is_channel(Target) of
         true ->
@@ -436,13 +463,3 @@ who({_ServerIp,ServerHostent},Socket,Nick,Target) ->
                     gen_tcp:send(Socket,?REPLY_ENDOFWHO)
             end
     end.
-
-%% JOIN - ska alltid få in #, om den inte har det är det ingen kanal. Användare kan inte ha det som username eller nickname
-%% string:to_lower för alla compares med users och nick
-%% LIST - lists all channels
-%% AWAY - makes user away
-%% PING/PONG - kolla så dom fungerar som dom ska
-%% OPER - make an users operator
-%% MODE - privliges, gives users or gives privilegies
-
-%% WHO - kanske

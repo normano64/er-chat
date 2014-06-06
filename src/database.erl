@@ -1,5 +1,5 @@
 %% coding: latin-1
-%% @author Sam, Mattias,Ludwing, Per och Tomas
+%% @author Sam, Mattias, Ludwing, Per och Tomas
 %% @doc Database module implemented using mnesia
 -include_lib("eunit/include/eunit.hrl").
 -module(database).
@@ -353,6 +353,7 @@ channel_test()->
 %% @hidden
 extract_nick(List,Nick)->
     extract_nick(List,Nick,[]).
+%% @hidden
 extract_nick([],_Nick,Ack)->
     Ack;
 extract_nick([H|T], Nick,Ack) ->
