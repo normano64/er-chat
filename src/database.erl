@@ -7,7 +7,7 @@
 -export_type([any/0]).
 -record(channel,{id, users, topic}).
 -record(user,{socket, user, nick, server,hostent, realname, channel_list}).
--record(server,{id,servername,socket,active}). 
+%%-record(server,{id,servername,socket,active}). 
 
 %% @doc Generated a new database
 -spec create_db()->atom().
@@ -17,8 +17,8 @@ create_db()->
     mnesia:create_schema(ListNodes),
     mnesia:start(),
     mnesia:create_table(user,[{attributes,record_info(fields,user)},{type,set}]),
-    mnesia:create_table(channel,[{attributes,record_info(fields,channel)},{disc_copies,ListNodes},{type,set}]),
-    mnesia:create_table(server,[{attributes, record_info(fields,server)},{disc_copies,ListNodes},{type,set}]).
+    mnesia:create_table(channel,[{attributes,record_info(fields,channel)},{disc_copies,ListNodes},{type,set}]).
+    %% mnesia:create_table(server,[{attributes, record_info(fields,server)},{disc_copies,ListNodes},{type,set}]).
 
 %% @doc Prints out every element in Table from the database.
 -spec traverse_table_and_show(Table_name::atom())-> list().
@@ -225,19 +225,19 @@ get_next_channel(Tab,Key)->
 %% @doc This function adds a server where the id is the Servernumber, ergo the n:th server added, servername is the identifier, Socket is
 %%      the socket of the server and Active is if the server is active or not. The Server 
 %%      can be found with it's unique name.
-insert_server(Servernumber,Servername,Socket,Active) ->
-    Data = #server{id=Servernumber,servername=Servername, socket=Socket, active=Active},
-    F = fun() ->
-		mnesia:write(Data)
-	end,
-    mnesia:transaction(F).
+%% insert_server(Servernumber,Servername,Socket,Active) ->
+%%     Data = #server{id=Servernumber,servername=Servername, socket=Socket, active=Active},
+%%     F = fun() ->
+%% 		mnesia:write(Data)
+%% 	end,
+%%     mnesia:transaction(F).
 
-%% @doc This function deletes a server names as Server in the server table from the database.
-delete_server(Servername)->
-    F = fun()->
-		mnesia:delete({server,Servername})
-	end,
-    mnesia:transaction(F).
+%% %% @doc This function deletes a server names as Server in the server table from the database.
+%% delete_server(Servername)->
+%%     F = fun()->
+%% 		mnesia:delete({server,Servername})
+%% 	end,
+%%     mnesia:transaction(F).
 
 %% @doc This function searches the database and returns true or false weather the Server exists.
 %% exists_server(Servername) ->
@@ -288,14 +288,14 @@ delete_server(Servername)->
 
 %% @hidden
 reset()->
-	create_db(),
-	delete_table_db(user),
-	delete_table_db(channel),
-	stop().
+    start(),
+    delete_table_db(user),
+    delete_table_db(channel),
+    stop().
 
 %% @hidden
 database_functions_test()->
-	[reset(),
+	reset(),
 	?assertExit({aborted,{node_not_running,nonode@nohost}},traverse_table_and_show(user)),
 	start(),	
 	?assertExit({aborted,{no_exists,user}},traverse_table_and_show(user)),
@@ -308,35 +308,27 @@ database_functions_test()->
 	?assertMatch([] , traverse_table_and_show(user)),
 	?assertMatch({atomic,ok} , insert_user(123,kalle,stekare,servername,host,"Kalle Anka")),
 	?assertMatch({atomic,ok} , delete_table_db(user)),
-	?assertMatch({atomic,ok} , delete_table_db(channel)),
-	stop(),{test_passed,ok}].
+	?assertMatch({atomic,ok} , delete_table_db(channel)).
 
 %% @hidden
 nick_test()->
-	[reset(),
-	create_db(),
-	?assertMatch({atomic,ok}, insert_user(123,kalle,stekare,servername,host,"Kalle Anka")),
-	
-	?assertMatch({atomic,[{user,123,kalle,stekare,servername,host,"Kalle Anka",[]}]}  , check_socket(123)),
-	?assertMatch({atomic,[{user,123,kalle,stekare,servername,host,"Kalle Anka",[]}]}  , check_nick(stekare)),
-	?assertMatch({atomic,ok} , update_nick(123, flygare)),
-	?assertMatch({atomic,[{user,123,kalle,flygare,servername,host,"Kalle Anka",[]}]}  , check_socket(123)),
-	?assertMatch({atomic,[{user,123,kalle,flygare,servername,host,"Kalle Anka",[]}]}  , check_nick(flygare)),
-	delete_table_db(user),
-	delete_table_db(channel),
-	stop(),{test_passed,ok}].
+    reset(),
+    create_db(),
+    [?assertMatch({atomic,ok},insert_user(123,kalle,{string:to_lower(binary:bin_to_list(<<"stekare">>)),<<"stekare">>},servername,host,"Kalle Anka")),
+     ?assertMatch({atomic,[{user,123,kalle,{"stekare",<<"stekare">>},servername,host,"Kalle Anka",[]}]},check_socket(123)),
+     ?assertMatch({atomic,[{user,123,kalle,{"stekare",<<"stekare">>},servername,host,"Kalle Anka",[]}]},check_nick(<<"stekare">>)),
+     ?assertMatch({atomic,ok},update_nick(123,{string:to_lower(binary:bin_to_list(<<"flygare">>)),<<"flygare">>})),
+     ?assertMatch({atomic,[{user,123,kalle,{"flygare",<<"flygare">>},servername,host,"Kalle Anka",[]}]},check_socket(123)),
+     ?assertMatch({atomic,[{user,123,kalle,{"flygare",<<"flygare">>},servername,host,"Kalle Anka",[]}]},check_nick(<<"flygare">>))].
 
 %% @hidden
 channel_test()->
-    delete_table_db(user),
-    delete_table_db(channel),
-    delete_table_db(server),
+    reset(),
     create_db(),
     insert_user(<<"Socket1">>,<<"UserKalle">>,{"nick1",<<"NiCk1">>},<<"Servername1">>,<<"Hostname1">>,<<"Realname1">>),
     insert_user(<<"Socket2">>,<<"UserRandom">>,{"randomuser",<<"RandomUser">>},<<"Servername2">>,<<"Hostname2">>,<<"Realname2">>),
     insert_channel(<<"#Channel1">>,{<<"@">>,<<"NiCk1">>},<<"Topic">>),
     join_channel(<<"#Channel1">>,{<<"">>,<<"RandomUser">>},<<"Socket2">>),
-    
     [?assertMatch({_,[{channel,<<"#Channel1">>,[{<<"">>,<<"RandomUser">>},{<<"@">>,<<"NiCk1">>}],<<"Topic">>}]},check_channel(<<"#Channel1">>)),
      ?assertMatch({_,[]},check_channel(<<"NotExistingChannel">>)),
      ?assertMatch({atomic,_},part_channel(<<"#Channel1">>,<<"RandomUser">>,<<"Socket2">>)),
