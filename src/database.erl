@@ -222,7 +222,7 @@ get_next_channel(Tab,Key)->
 %                                                                                           %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%% @doc This function adds a server where the id is the Servernumber, ergo the n:th server added, servername is the identifier, Socket is
+% % @doc This function adds a server where the id is the Servernumber, ergo the n:th server added, servername is the identifier, Socket is
 %%      the socket of the server and Active is if the server is active or not. The Server 
 %%      can be found with it's unique name.
 %% insert_server(Servernumber,Servername,Socket,Active) ->
@@ -232,7 +232,7 @@ get_next_channel(Tab,Key)->
 %% 	end,
 %%     mnesia:transaction(F).
 
-%% %% @doc This function deletes a server names as Server in the server table from the database.
+%% % % @doc This function deletes a server names as Server in the server table from the database.
 %% delete_server(Servername)->
 %%     F = fun()->
 %% 		mnesia:delete({server,Servername})
